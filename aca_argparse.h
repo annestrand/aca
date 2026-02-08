@@ -34,6 +34,7 @@ typedef struct aca_argparse_opt_list {
 #define ACA_ARGPARSE_STR_USED(val) (!(val == NULL) && !(ACA_ARGPARSE_STR_MATCH(val, "")))
 #define ACA_ARGPARSE_APPEND_OPT 0
 #define ACA_ARGPARSE_HEAD_OPT 1
+#define ACA_ARGPARSE_HEAD NULL
 #define ACA_ARGPARSE_OPT(storeVal, sName, lName, hasVal, desc)                                     \
     assert(!ACA_ARGPARSE_STR_MATCH("-", sName) &&                                                  \
            "[aca_argparse]: ERROR - The '-' character is not permitted as a "                      \
@@ -49,7 +50,7 @@ typedef struct aca_argparse_opt_list {
     }                                                                                              \
     do {                                                                                           \
         aca_argparse_opt_list opt = {ACA_ARGPARSE_APPEND_OPT, &storeVal};                          \
-        acaArgparseOptlistController(&opt);                                                        \
+        acaArgparseOptionListManager(&opt);                                                        \
     } while (0)
 
 // Global error strings
@@ -65,14 +66,14 @@ static const char *g_aca_argparse_err_strs[] = {"Malformed --<option>=<value>",
                                                 "Value given on a non-value opt"};
 
 // arpgarse api
-aca_argparse_opt *acaArgparseOptlistController(aca_argparse_opt_list *option);
 int               acaArgparseParse(int argc, char *argv[]);
 int               acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset);
 void              acaArgparsePrint(void);
+aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option);
 
 #ifdef ACA_ARGPARSE_IMPLEMENTATION
 
-aca_argparse_opt *acaArgparseOptlistController(aca_argparse_opt_list *option) {
+aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option) {
     static aca_argparse_opt *aca_argparse_HEAD = NULL;
     if (option == NULL) {
         return aca_argparse_HEAD;
@@ -102,7 +103,7 @@ int acaArgparseParse(int argc, char *argv[]) {
 
         int               isLongOpt = 0;
         int               validOpt  = 0;
-        aca_argparse_opt *tmp       = acaArgparseOptlistController(NULL);
+        aca_argparse_opt *tmp       = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
 
         // Look for opt in opts list
         while (tmp != NULL) {
@@ -195,7 +196,7 @@ int acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset) {
 
         // Otherwise check if arg is opt-value type or not
         int               isOptValue = 0;
-        aca_argparse_opt *tmp        = acaArgparseOptlistController(NULL);
+        aca_argparse_opt *tmp        = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
         while (tmp != NULL) {
             if (tmp->infoBits.used && tmp->infoBits.hasValue &&
                 (tmp->index == i - 1 && !tmp->infoBits.longOpt)) {
@@ -213,7 +214,7 @@ int acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset) {
 }
 
 void acaArgparsePrint(void) {
-    aca_argparse_opt *tmp = acaArgparseOptlistController(NULL);
+    aca_argparse_opt *tmp = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
     while (tmp != NULL) {
         if (tmp->infoBits.hasValue) {
             if (ACA_ARGPARSE_STR_USED(tmp->shortName) && ACA_ARGPARSE_STR_USED(tmp->longName)) {

@@ -28,7 +28,7 @@ TEST(argparse, test_valid_options) {
     EXPECT_EQ(data.infoBits.used, 1U);
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, test_single_positional_arg) {
@@ -55,7 +55,7 @@ TEST(argparse, test_single_positional_arg) {
     EXPECT_EQ(posIndex, 2);
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, test_positional_args) {
@@ -90,5 +90,5 @@ TEST(argparse, test_positional_args) {
     } while (!posIndex);
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }

@@ -25,7 +25,7 @@ TEST(argparse, duplicate_options) {
     EXPECT_EQ(data.infoBits.duplicate, 1U);
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, value_option_at_end_no_value) {
@@ -46,7 +46,7 @@ TEST(argparse, value_option_at_end_no_value) {
                                        g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV]));
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, unknown_option) {
@@ -68,7 +68,7 @@ TEST(argparse, unknown_option) {
     EXPECT_TRUE(ACA_ARGPARSE_STR_MATCH(argv[unknownOpt], "--problem"));
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, option_value_is_other_option) {
@@ -94,7 +94,7 @@ TEST(argparse, option_value_is_other_option) {
                                        g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_VAL_IS_OPT]));
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, option_value_malformed_long_format) {
@@ -121,7 +121,7 @@ TEST(argparse, option_value_malformed_long_format) {
         data2.errValMsg, g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL]));
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
 
 TEST(argparse, longname_non_value_option_has_value) {
@@ -148,5 +148,5 @@ TEST(argparse, longname_non_value_option_has_value) {
                                        g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL]));
 
     // Cleanup HEAD node
-    acaArgparseOptlistController(&g_clearOptlist);
+    acaArgparseOptionListManager(&g_clearOptlist);
 }
