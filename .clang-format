@@ -1,0 +1,46 @@
+BasedOnStyle: LLVM
+
+# Modern C++ features
+Standard: c++20
+
+# Indentation and limits
+IndentWidth: 4
+ColumnLimit: 100
+TabWidth: 4
+UseTab: Never
+
+# Pointer/reference alignment (right-aligned, like *p rather than int* p)
+PointerAlignment: Right
+
+# Alignment options
+AlignOperands: Align
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+# Access modifiers (public:/private: indented left)
+AccessModifierOffset: -2
+
+# Case labels in switches
+IndentCaseLabels: true
+
+# Empty lines in blocks
+KeepEmptyLinesAtTheStartOfBlocks: true
+
+# Namespace comments
+FixNamespaceComments: true
+
+# Include sorting (preserve order, or change to Regroup if you want sorting)
+IncludeBlocks: Preserve
+
+# Preprocessor directives
+IndentPPDirectives: AfterHash
+
+# Short functions/records/namespaces (don't split empty ones unnecessarily)
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false  # Prefer braces for clarity
+AllowShortLoopsOnASingleLine: false
+
+# Other sensible defaults
+BinPackParameters: false
+BinPackArguments: false
+SpaceBeforeParens: ControlStatements  # Space after if/for/while, etc.
