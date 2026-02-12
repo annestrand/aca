@@ -35,21 +35,21 @@ typedef struct aca_argparse_opt_list {
 #define ACA_ARGPARSE_APPEND_OPT 0
 #define ACA_ARGPARSE_HEAD_OPT 1
 #define ACA_ARGPARSE_HEAD NULL
-#define ACA_ARGPARSE_OPT(storeVal, sName, lName, hasVal, desc)                                     \
+#define ACA_ARGPARSE_OPT(option, sName, lName, hasVal, desc)                                       \
     assert(!ACA_ARGPARSE_STR_MATCH("-", sName) &&                                                  \
            "[aca_argparse]: ERROR - The '-' character is not permitted as a "                      \
            "shortName");                                                                           \
     assert(!(strlen(sName) > 1) && "[aca_argparse]: ERROR - The shortName "                        \
                                    "string can only have 1 character");                            \
-    aca_argparse_opt storeVal = {"-" sName, "--" lName, desc, "", "", 0, {hasVal, 0, 0}, NULL};    \
-    if (strcmp(storeVal.shortName, "-") == 0) {                                                    \
-        storeVal.shortName = "";                                                                   \
-    }                                                                                              \
-    if (strcmp(storeVal.longName, "--") == 0) {                                                    \
-        storeVal.longName = "";                                                                    \
-    }                                                                                              \
+    aca_argparse_opt option = {"-" sName, "--" lName, desc, "", "", 0, {hasVal, 0, 0}, NULL};      \
     do {                                                                                           \
-        aca_argparse_opt_list opt = {ACA_ARGPARSE_APPEND_OPT, &storeVal};                          \
+        if (strcmp(option.shortName, "-") == 0) {                                                  \
+            option.shortName = "";                                                                 \
+        }                                                                                          \
+        if (strcmp(option.longName, "--") == 0) {                                                  \
+            option.longName = "";                                                                  \
+        }                                                                                          \
+        aca_argparse_opt_list opt = {ACA_ARGPARSE_APPEND_OPT, &option};                            \
         acaArgparseOptionListManager(&opt);                                                        \
     } while (0)
 
