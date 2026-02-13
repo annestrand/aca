@@ -117,3 +117,108 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 ```
+---
+
+## aca_gdbstub.h:
+
+A target-agnostic minimal GDB stub that interfaces using the GDB Remote Serial Protocol.
+
+- Implements the core GDB Remote Serial Protocol
+- Implemented as a single C/C++ header file
+- Cross platform (Windows, macOS, Linux)
+
+The purpose of this utility is to abstract-away the GDB Remote Serial Protocol from the
+user and reduce the GDB "actions" into a set of simpler "stub" APIs for the user to
+define their own handling of these actions:
+```c
+void          acaGdbstubPutcharStub(char data, void *usrData);
+char          acaGdbstubGetcharStub(void *usrData);
+void          acaGdbstubWriteMemStub(size_t addr, unsigned char data, void *usrData);
+unsigned char acaGdbstubReadMemStub(size_t addr, void *usrData);
+void          acaGdbstubContinueStub(void *usrData);
+void          acaGdbstubStepStub(void *usrData);
+void          acaGdbstubProcessBreakpointStub(int type, size_t addr, void *usrData);
+void          acaGdbstubKillSessionStub(void *usrData);
+```
+
+*FYI: This approach of action "stubs" is exactly what [newlib](https://sourceware.org/newlib/libc.html#Syscalls) does with syscalls...*
+
+### Example Usage
+
+The following is an example usage of this utility:
+```c
+#include "aca_gdbstub.h"
+
+#include <stdio.h>
+
+#define REG_COUNT 32
+
+typedef struct {
+    int regfile[REG_COUNT];
+    // ...
+} myCustomData;
+
+void gdbserverCall(myCustomData *myCustomData) {
+    // Update regs
+    int regs[REG_COUNT];
+    for (int i=0; i<REG_COUNT; ++i) {
+        regs[i] = myCustomData->regFile[i];
+    }
+
+    // Create and write values to gdbstub context
+    aca_gdbstub_context gdbstubCtx = {0};
+    gdbstubCtx.regs = (char*)regs;
+    gdbstubCtx.regsSize = sizeof(regs);
+    gdbstubCtx.regsCount = REG_COUNT;
+    gdbstubCtx.usrData = (void*)myCustomData;
+
+    // Process cmds from GDB
+    minigdbstubProcess(&gdbstubCtx);
+
+    return;
+}
+
+// User-defined stubs - aca_gdbstub will handle the GDB command packets and formatting, then
+// forward the various debugger "actions" to these user stubs. Implementation of these stubs
+// is left to the user (e.g. emulator debugging, JTAG debugging for microcontroller, etc.)
+
+void acaGdbstubWriteMemStub(size_t addr, unsigned char data, void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+unsigned char acaGdbstubReadMemStub(size_t addr, void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+void acaGdbstubContinueStub(void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+void acaGdbstubStepStub(void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+char acaGdbstubGetcharStub(void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+void acaGdbstubPutcharStub(char data, void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+void acaGdbstubProcessBreakpointStub(int type, size_t addr, void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+
+void acaGdbstubKillSessionStub(void *usrData) {
+    myCustomData *dataHandle = (myCustomData*)usrData;
+    // User code here ...
+}
+```

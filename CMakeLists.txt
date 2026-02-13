@@ -9,8 +9,16 @@ target_sources(aca_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/argparse/aca_argparse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/argparse/test_bad_args.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/argparse/test_good_args.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/aca_gdbstub.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_common.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_breakpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_mem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_recv.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_regs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_send.cpp
 )
 target_include_directories(aca_tests PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(aca_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/gdbstub)
 if (MSVC)
     target_compile_options(aca_tests PRIVATE /WX)
 else()
