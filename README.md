@@ -7,6 +7,11 @@ C/C++ header file libraries/utilities
 - Implemented as a single C/C++ header files
 - Cross platform (Windows, macOS, Linux)
 
+library | category | description
+------- | -------- | -----------
+**[aca_argparse.h](#aca_argparseh)** | utility | simple C/C++ argument parsing utility
+**[aca_gdbstub.h](#aca_gdbstubh)** | debug | minimal GDB Remote Serial Protocol utility
+
 ## How to use libraries/utilities
 There are two parts, the header (contains only the declarations), and a user-created source file
 to compile the definition/implementation of that header library (exactly like the stb header libraries).
