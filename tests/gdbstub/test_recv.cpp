@@ -29,7 +29,7 @@ TEST(gdbstub, test_recvs) {
 
         aca_gdbstub_context gdbstubCtx = {0};
         aca_gdb_packet      gdbPkt     = {0};
-        GTEST_FAIL_IF_ERR(acaDynamicCharBufferInit(&gdbPkt.pktData, ACA_GDBSTUB_PKT_SIZE));
+        GTEST_FAIL_IF_ERR(acaDynamicCharBufferInit(&gdbPkt.pktData, 64));
 
         acaGdbstubRecv(&gdbstubCtx, &gdbPkt);
         GTEST_FAIL_IF_ERR(gdbstubCtx.err);

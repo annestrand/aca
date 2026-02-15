@@ -11,10 +11,6 @@
 #define ACA_GDBSTUB_ERROR_PACKET "$E00#96"
 #define ACA_GDBSTUB_OK_PACKET "$OK#9a"
 
-#ifndef ACA_GDBSTUB_PKT_SIZE
-#    define ACA_GDBSTUB_PKT_SIZE 256
-#endif
-
 // Log/trace/debug macros
 #define ACA_GDBSTUB_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define ACA_GDBSTUB_LOG_I(msg, ...)                                                                \
@@ -478,8 +474,7 @@ void acaGdbstubProcess(aca_gdbstub_context *gdbstubObj) {
     // Poll and reply to packets from GDB until exit-related command
     while (1) {
         aca_gdb_packet recvPkt;
-        ACA_GDBSTUB_CHECK_RET(acaDynamicCharBufferInit(&recvPkt.pktData, ACA_GDBSTUB_PKT_SIZE),
-                              gdbstubObj);
+        ACA_GDBSTUB_CHECK_RET(acaDynamicCharBufferInit(&recvPkt.pktData, 256), gdbstubObj);
         acaGdbstubRecv(gdbstubObj, &recvPkt);
 
         switch (recvPkt.commandType) {
