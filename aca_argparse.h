@@ -65,7 +65,7 @@ static const char *g_aca_argparse_err_strs[] = {"Malformed --<option>=<value>",
                                                 "Value has option syntax (i.e. -, --)",
                                                 "Value given on a non-value opt"};
 
-// arpgarse api
+// aca_arpgarse library main api
 int               acaArgparseParse(int argc, char *argv[]);
 int               acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset);
 void              acaArgparsePrint(void);
