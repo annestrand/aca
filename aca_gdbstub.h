@@ -1,53 +1,6 @@
 #ifndef ACA_GDBSTUB_H
 #define ACA_GDBSTUB_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define ACA_GDBSTUB_ACK_PACKET "+"
-#define ACA_GDBSTUB_RESEND_PACKET "-"
-#define ACA_GDBSTUB_EMPTY_PACKET "$#00"
-#define ACA_GDBSTUB_ERROR_PACKET "$E00#96"
-#define ACA_GDBSTUB_OK_PACKET "$OK#9a"
-
-// Log/trace/debug macros
-#define ACA_GDBSTUB_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define ACA_GDBSTUB_LOG_I(msg, ...)                                                                \
-    printf("[aca_gdbstub] INFO  [ %12s:%-6d ]%20s : " msg,                                         \
-           ACA_GDBSTUB_FILENAME,                                                                   \
-           __LINE__,                                                                               \
-           __func__,                                                                               \
-           ##__VA_ARGS__)
-#define ACA_GDBSTUB_LOG_W(msg, ...)                                                                \
-    printf("[aca_gdbstub] WARN  [ %12s:%-6d ]%20s : " msg,                                         \
-           ACA_GDBSTUB_FILENAME,                                                                   \
-           __LINE__,                                                                               \
-           __func__,                                                                               \
-           ##__VA_ARGS__)
-#define ACA_GDBSTUB_LOG_E(msg, ...)                                                                \
-    printf("[aca_gdbstub] ERROR [ %12s:%-6d ]%20s : " msg,                                         \
-           ACA_GDBSTUB_FILENAME,                                                                   \
-           __LINE__,                                                                               \
-           __func__,                                                                               \
-           ##__VA_ARGS__)
-#define ACA_GDBSTUB_LOG_TRACE(msg, ...) printf("[aca_gdbstub] : " msg, ##__VA_ARGS__)
-#define ACA_GDBSTUB_SEND "GDB <--- ACA_GDBSTUB"
-#define ACA_GDBSTUB_RECV "GDB ---> ACA_GDBSTUB"
-
-#define ACA_GDBSTUB_HEX_DECODE_ASCII(in, out) out = strtol(in, NULL, 16)
-#define ACA_GDBSTUB_HEX_ENCODE_ASCII(in, len, out) snprintf(out, len, "%x", in)
-#define ACA_GDBSTUB_DEC_ENCODE_ASCII(in, len, out) snprintf(out, len, "%d", in)
-
-// Set if error and return early
-#define ACA_GDBSTUB_CHECK_RET(ret, gdbstubObj)                                                     \
-    do {                                                                                           \
-        gdbstubObj->err = ret;                                                                     \
-        if (gdbstubObj->err != ACA_GDBSTUB_SUCCESS) {                                              \
-            return;                                                                                \
-        }                                                                                          \
-    } while (0)
-
 enum { ACA_GDBSTUB_SUCCESS, ACA_GDBSTUB_ALLOC_FAILED };
 enum {
     ACA_GDBSTUB_SOFT_BREAKPOINT = (1 << 0),
@@ -119,10 +72,36 @@ void acaDynamicCharBufferFree(aca_dynamic_char_buffer *buf);
 
 #ifdef ACA_GDBSTUB_IMPLEMENTATION
 
+#    include <stdio.h>
+#    include <stdlib.h>
+#    include <string.h>
+
+#    define ACA_GDBSTUB_ACK_PACKET "+"
+#    define ACA_GDBSTUB_RESEND_PACKET "-"
+#    define ACA_GDBSTUB_EMPTY_PACKET "$#00"
+#    define ACA_GDBSTUB_ERROR_PACKET "$E00#96"
+#    define ACA_GDBSTUB_OK_PACKET "$OK#9a"
+#    define ACA_GDBSTUB_SEND "GDB <--- ACA_GDBSTUB"
+#    define ACA_GDBSTUB_RECV "GDB ---> ACA_GDBSTUB"
+
+#    define ACA_GDBSTUB_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#    define ACA_GDBSTUB_LOG(msg, ...)                                                              \
+        printf("[aca_gdbstub] [ %12s:%-6d ] : " msg, ACA_GDBSTUB_FILENAME, __LINE__, ##__VA_ARGS__)
+#    define ACA_GDBSTUB_HEX_DECODE_ASCII(in, out) out = strtol(in, NULL, 16)
+#    define ACA_GDBSTUB_HEX_ENCODE_ASCII(in, len, out) snprintf(out, len, "%x", in)
+#    define ACA_GDBSTUB_DEC_ENCODE_ASCII(in, len, out) snprintf(out, len, "%d", in)
+#    define ACA_GDBSTUB_CHECK_RET(ret, gdbstubObj)                                                 \
+        do {                                                                                       \
+            gdbstubObj->err = ret;                                                                 \
+            if (gdbstubObj->err != ACA_GDBSTUB_SUCCESS) {                                          \
+                return;                                                                            \
+            }                                                                                      \
+        } while (0)
+
 int acaDynamicCharBufferInit(aca_dynamic_char_buffer *buf, size_t startSize) {
     buf->buffer = (char *)malloc(startSize * sizeof(char));
     if (buf->buffer == NULL) {
-        ACA_GDBSTUB_LOG_E("Failed to alloc memory!\n");
+        ACA_GDBSTUB_LOG("Failed to alloc memory!\n");
         return ACA_GDBSTUB_ALLOC_FAILED;
     }
     buf->used = 0;
@@ -135,7 +114,7 @@ int acaDynamicCharBufferInsert(aca_dynamic_char_buffer *buf, char item) {
         buf->size *= 2;
         buf->buffer = (char *)realloc(buf->buffer, buf->size);
         if (buf->buffer == NULL) {
-            ACA_GDBSTUB_LOG_E("Failed to realloc memory!\n");
+            ACA_GDBSTUB_LOG("Failed to realloc memory!\n");
             return ACA_GDBSTUB_ALLOC_FAILED;
         }
     }
@@ -165,7 +144,7 @@ void acaGdbstubComputeChecksum(char *buffer, size_t len, char *outBuf) {
 void acaGdbstubSend(const char *data, aca_gdbstub_context *gdbstubObj) {
     size_t len = strlen(data);
     if (gdbstubObj->opts.o_enableLogging) {
-        ACA_GDBSTUB_LOG_TRACE(ACA_GDBSTUB_SEND " : packet = %s\n", data);
+        ACA_GDBSTUB_LOG(ACA_GDBSTUB_SEND " : packet = %s\n", data);
     }
     for (size_t i = 0; i < len; ++i) {
         acaGdbstubPutcharStub(data[i], gdbstubObj->usrData);
@@ -210,7 +189,7 @@ void acaGdbstubRecv(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *gdbPkt) {
 
         gdbPkt->commandType = gdbPkt->pktData.buffer[0];
         if (gdbstubObj->opts.o_enableLogging) {
-            ACA_GDBSTUB_LOG_TRACE(
+            ACA_GDBSTUB_LOG(
                 ACA_GDBSTUB_RECV " : packet = $%s#%s\n", gdbPkt->pktData.buffer, gdbPkt->checksum);
         }
         acaGdbstubSend(ACA_GDBSTUB_ACK_PACKET, gdbstubObj);

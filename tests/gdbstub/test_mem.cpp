@@ -38,7 +38,7 @@ TEST(gdbstub, test_m) {
     // Verify putchar buffer matches the dummyMem
     for (int i = 0; i < 4; ++i) {
         char itoaBuff[3];
-        ACA_GDBSTUB_HEX_ENCODE_ASCII(dummyMem[i + 8], 3, itoaBuff);
+        snprintf(itoaBuff, 3, "%x", dummyMem[i + 8]);
         // Swap if single digit
         if (itoaBuff[1] == 0) {
             itoaBuff[1] = itoaBuff[0];
