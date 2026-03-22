@@ -16,6 +16,8 @@ target_sources(aca_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_recv.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_regs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/gdbstub/test_send.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/log/aca_log.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/log/test_log.cpp
 )
 target_include_directories(aca_tests PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(aca_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/gdbstub)

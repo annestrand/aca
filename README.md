@@ -11,6 +11,7 @@ library | category | description
 ------- | -------- | -----------
 **[aca_argparse.h](#aca_argparseh)** | utility | simple C/C++ argument parsing utility
 **[aca_gdbstub.h](#aca_gdbstubh)** | debug | minimal GDB Remote Serial Protocol utility
+**[aca_log.h](#aca_logh)** | debug | printf-style logging library
 
 ## How to use libraries/utilities
 There are two parts, the header (contains only the declarations), and a user-created source file
@@ -227,3 +228,124 @@ void acaGdbstubKillSessionStub(void *usrData) {
     // User code here ...
 }
 ```
+---
+
+## aca_log.h:
+
+A printf-style logging library.
+
+- Utilizes a "handler" registration mechanism (i.e. function pointers)
+- Allows user to hot-swap handlers at runtime
+- Library comes with example handlers (e.g. null, basic, standard)
+
+### Design/API
+
+```c
+void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
+void             acaLogSetHandler(aca_log_handler *handler);
+aca_log_handler *acaLogGetHandler(void);
+```
+
+Below are the helper-macros for `acaLog` (user should opt to just use these):
+```c
+#define ACA_LOG_INFO(fmt, ...)  acaLog(ACA_LOG_INFO,  __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_WARN(fmt, ...)  acaLog(ACA_LOG_WARN,  __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_ERROR(fmt, ...) acaLog(ACA_LOG_ERROR, __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_FATAL(fmt, ...) acaLog(ACA_LOG_FATAL, __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_DEBUG(fmt, ...) acaLog(ACA_LOG_DEBUG, __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, __VA_ARGS__);
+```
+
+Below is the signature of a "handler" routine - users can define their own handler(s) by adopting this signature:
+```c
+typedef void(aca_log_handler)(aca_log_level level,
+                              const char   *srcLine, // acaLog() formats this as FILE:LINE
+                              const char   *fmt,
+                              va_list       args);
+```
+
+### Configs
+
+There are a few config macros for user control. These need to be defined when defining the implementation source:
+```c
+#define ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS // enable log level colors in standard handler
+#define ACA_LOG_CHOP_FILEPATH // chops the full prefix-path from __FILE__
+#define ACA_LOG_TAG "MyProject" // adds project tag to prefix (default is "aca")
+
+#define ACA_LOG_IMPLEMENTATION
+#include "aca_log.h"
+```
+
+### Example Usage
+
+The following is an example usage of this utility:
+```c
+#include "aca_log.h"
+
+#include <stdio.h>
+
+// user custom handler routes logging to a file
+void logToFileHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args) {
+    FILE* fp = fopen("dump.log", "a");
+    if (!fp) {
+        printf("Failed to open \"dump.log\"...");
+        return;
+    }
+    switch (level) {
+        case ACA_LOG_INFO:
+            fprintf(fp, "[ INFO] ");
+            break;
+        case ACA_LOG_WARN:
+            fprintf(fp, "[ WARN] ");
+            break;
+        case ACA_LOG_ERROR:
+            fprintf(fp, "[ERROR] ");
+            break;
+        default:
+            // ignore all other types
+            fclose(fp);
+            return;
+    }
+    vfprintf(fp, fmt, args);
+    fprintf(fp, "\n");
+    fclose(fp);
+}
+
+int main(void) {
+    // logs to stdout
+    acaLogSetHandler(acaLogStandardHandler);
+    ACA_LOG_INFO("Hello World!");
+    ACA_LOG_WARN("Value1: %d, Value2: %f...", 555, 24.56);
+
+    aca_log_handler *lastHandler = acaLogGetHandler();
+
+    // logs to user file now
+    acaLogSetHandler(logToFileHandler);
+    ACA_LOG_INFO("Hello World!");
+    ACA_LOG_WARN("Value1: %d, Value2: %f...", 555, 24.56);
+
+    // disables all logging
+    acaLogSetHandler(acaLogNullHandler);
+    ACA_LOG_ERROR("Should not be logged!");
+
+    // back to standard handler
+    acaLogSetHandler(lastHandler);
+    ACA_LOG_DEBUG("Done...");
+
+    return 0;
+}
+```
+```
+$ cc main.c && ./a.out
+[aca] [ INFO] [             main.c:35] Hello World!
+[aca] [ WARN] [             main.c:36] Value1: 555, Value2: 24.560000...
+[aca] [DEBUG] [             main.c:51] Done...
+
+$ cat dump.log
+[ INFO] Hello World!
+[ WARN] Value1: 555, Value2: 24.560000...
+```
+
+### Thread Safety
+The implementation keeps track of a static handler ptr during runtime. At the moment, any Set/Get handler routines are **NOT THREAD SAFE**. 
+

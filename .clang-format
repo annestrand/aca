@@ -32,9 +32,6 @@ FixNamespaceComments: true
 # Include sorting (preserve order, or change to Regroup if you want sorting)
 IncludeBlocks: Preserve
 
-# Preprocessor directives
-IndentPPDirectives: AfterHash
-
 # Short functions/records/namespaces (don't split empty ones unnecessarily)
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false  # Prefer braces for clarity
