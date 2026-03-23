@@ -60,10 +60,6 @@ enum aca_argparse_err_indexes {
     ACA_ARGPARSE_ERR_VAL_IS_OPT,
     ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL
 };
-static const char *g_aca_argparse_err_strs[] = {"Malformed --<option>=<value>",
-                                                "Option already at end of argv - expected value",
-                                                "Value has option syntax (i.e. -, --)",
-                                                "Value given on a non-value opt"};
 
 // aca_arpgarse library main api
 int               acaArgparseParse(int argc, char *argv[]);
@@ -72,6 +68,11 @@ void              acaArgparsePrint(void);
 aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option);
 
 #ifdef ACA_ARGPARSE_IMPLEMENTATION
+
+const char *gAcaArgparseErrStrs[] = {"Malformed --<option>=<value>",
+                                     "Option already at end of argv - expected value",
+                                     "Value has option syntax (i.e. -, --)",
+                                     "Value given on a non-value opt"};
 
 aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option) {
     static aca_argparse_opt *aca_argparse_HEAD = NULL;
@@ -131,7 +132,7 @@ int acaArgparseParse(int argc, char *argv[]) {
                     ACA_ARGPARSE_STR_N_MATCH(argv[i], tmp->longName, offset)) {
                     if (!tmp->infoBits.hasValue) {
                         tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg = g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL];
+                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL];
                         tmp->value     = argv[i];
                     }
                     if (tmp->infoBits.used) {
@@ -150,9 +151,8 @@ int acaArgparseParse(int argc, char *argv[]) {
                     val = strchr(argv[i], '=');
                     if (val == NULL) {
                         tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg =
-                            g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL];
-                        tmp->value = argv[i];
+                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL];
+                        tmp->value     = argv[i];
                     } else {
                         offset     = (int)(val - argv[i]);
                         tmp->value = &argv[i][offset + 1];
@@ -161,10 +161,10 @@ int acaArgparseParse(int argc, char *argv[]) {
                 } else {
                     if ((i + 1) >= argc) {
                         tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg = g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV];
+                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV];
                     } else if (argv[i + 1][0] == '-') {
                         tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg       = g_aca_argparse_err_strs[ACA_ARGPARSE_ERR_VAL_IS_OPT];
+                        tmp->errValMsg       = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_VAL_IS_OPT];
                         tmp->value           = argv[i + 1];
                     } else {
                         tmp->value = argv[i + 1];

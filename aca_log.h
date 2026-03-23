@@ -110,12 +110,14 @@ static inline const char *FormatFileLine(const char *file, int line) {
 }
 
 static aca_log_handler *gAcaLogHandler = acaLogStandardHandler; // todo: maybe this can be TLS
-static const char      *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
-                                                  ACA_LOG_COLOR_MAGENTA,
-                                                  ACA_LOG_COLOR_GREEN,
-                                                  ACA_LOG_COLOR_YELLOW,
-                                                  ACA_LOG_COLOR_RED,
-                                                  ACA_LOG_COLOR_RED};
+#if defined(ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS)
+static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
+                                             ACA_LOG_COLOR_MAGENTA,
+                                             ACA_LOG_COLOR_GREEN,
+                                             ACA_LOG_COLOR_YELLOW,
+                                             ACA_LOG_COLOR_RED,
+                                             ACA_LOG_COLOR_RED};
+#endif // ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS
 
 // main log entrypoint
 void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...) {
