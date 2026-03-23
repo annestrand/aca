@@ -258,10 +258,16 @@ Below are the helper-macros for `acaLog` (user should opt to just use these):
 
 Below is the signature of a "handler" routine - users can define their own handler(s) by adopting this signature:
 ```c
-typedef void(aca_log_handler)(aca_log_level level,
-                              const char   *srcLine, // acaLog() formats this as FILE:LINE
-                              const char   *fmt,
-                              va_list       args);
+typedef void(aca_log_handler)(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+
+// example handlers:
+// prints [tag] [level] [file:line] msg - to stdout (allows for colored-level logging)
+void acaLogStandardHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+// prints [level] msg - to stdout
+void acaLogBasicHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+// disables/eats the logs
+void acaLogNullHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 ```
 
 ### Configs
@@ -285,7 +291,7 @@ The following is an example usage of this utility:
 #include <stdio.h>
 
 // user custom handler routes logging to a file
-void logToFileHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args) {
+void logToFileHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
     FILE* fp = fopen("dump.log", "a");
     if (!fp) {
         printf("Failed to open \"dump.log\"...");

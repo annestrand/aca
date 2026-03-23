@@ -1,7 +1,4 @@
-#include <iostream>
-#include <signal.h>
 #include <string>
-#include <vector>
 
 #include "aca_log.h"
 #include "gtest/gtest.h"
@@ -12,17 +9,21 @@
 #define PRINT_LOG_STR(str)
 #endif
 
+#define STRINGIFY_INTERNAL(x) #x
+#define STRINGIFY(x) STRINGIFY_INTERNAL(x)
+#define LINESTR STRINGIFY(__LINE__)
+
 #define LOG_TEST(level, expected, fmt, ...)                                                        \
     do {                                                                                           \
         testing::internal::CaptureStdout();                                                        \
-        ACA_LOG_##level(fmt, __VA_ARGS__);                                                         \
+        ACA_LOG_##level(fmt, ##__VA_ARGS__);                                                       \
         std::string captured = testing::internal::GetCapturedStdout();                             \
         PRINT_LOG_STR(captured);                                                                   \
         EXPECT_STREQ(expected, captured.c_str());                                                  \
     } while (false)
 
 // special case where we always expect no output
-#define LOG_TEST_NULL(level, fmt, ...) LOG_TEST(level, "", fmt, __VA_ARGS__);
+#define LOG_TEST_NULL(level, fmt, ...) LOG_TEST(level, "", fmt, ##__VA_ARGS__);
 
 TEST(log, null_handler) {
     acaLogSetHandler(acaLogNullHandler);
@@ -83,17 +84,22 @@ TEST(log, basic_handler) {
 TEST(log, default_handler) {
     acaLogSetHandler(acaLogStandardHandler);
 
-#define EXPECTED1 "[aca_log_test] [ INFO] [             test_log.cpp:99] Hello World!\n"
-#define EXPECTED2 "[aca_log_test] [ INFO] [            test_log.cpp:100] Result is 100\n"
+#define EXPECTED1 "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] Hello World!\n"
+#define EXPECTED2 "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] Result is 100\n"
 #define EXPECTED3                                                                                  \
-    "[aca_log_test] [ WARN] [            test_log.cpp:101] A: 31.456000, B: b, C: 555\n"
-#define EXPECTED4 "[aca_log_test] [DEBUG] [            test_log.cpp:105] Debug message\n"
-#define EXPECTED5 "[aca_log_test] [ WARN] [            test_log.cpp:106] Warning occurred\n"
-#define EXPECTED6 "[aca_log_test] [ERROR] [            test_log.cpp:107] Error code: 500\n"
-#define EXPECTED7 "[aca_log_test] [ INFO] [            test_log.cpp:110] \n"
-#define EXPECTED8 "[aca_log_test] [ INFO] [            test_log.cpp:111] Progress: 100%\n"
-#define EXPECTED9 "[aca_log_test] [ INFO] [            test_log.cpp:114] Hex: 0xFF\n"
-#define EXPECTED10 "[aca_log_test] [ WARN] [            test_log.cpp:115] Float: 3.14\n"
+    "[aca_log_test] [ WARN] [            test_log.cpp:" LINESTR "] A: 31.456000, B: b, C: 555\n"
+#define EXPECTED4 "[aca_log_test] [DEBUG] [            test_log.cpp:" LINESTR "] Debug message\n"
+#define EXPECTED5 "[aca_log_test] [ WARN] [            test_log.cpp:" LINESTR "] Warning occurred\n"
+#define EXPECTED6 "[aca_log_test] [ERROR] [            test_log.cpp:" LINESTR "] Error code: 500\n"
+#define EXPECTED7 "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] \n"
+#define EXPECTED8 "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] Progress: 100%\n"
+#define EXPECTED9 "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] Hex: 0xFF\n"
+#define EXPECTED10 "[aca_log_test] [ WARN] [            test_log.cpp:" LINESTR "] Float: 3.14\n"
+#define EXPECTED11                                                                                 \
+    "[aca_log_test] [ INFO] [            test_log.cpp:" LINESTR "] "                               \
+    "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
+    "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
+    "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\n"
 
     // 1. run through some simple scenarios
     LOG_TEST(INFO, EXPECTED1, "Hello World!");
@@ -116,7 +122,5 @@ TEST(log, default_handler) {
 
     // 5. large payload test
     std::string longInput(256, 'z');
-    std::string expectedOutput =
-        "[aca_log_test] [ INFO] [            test_log.cpp:121] " + longInput + "\n";
-    LOG_TEST(INFO, expectedOutput.c_str(), "%s", longInput.c_str());
+    LOG_TEST(INFO, EXPECTED11, "%s", longInput.c_str());
 }

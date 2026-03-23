@@ -22,43 +22,48 @@ enum aca_log_level {
     ACA_LOG_FATAL
 };
 
-typedef void(aca_log_handler)(aca_log_level level,
-                              const char   *srcLine,
-                              const char   *fmt,
-                              va_list       args);
+typedef void(aca_log_handler)(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 
 void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
 void             acaLogSetHandler(aca_log_handler *handler);
 aca_log_handler *acaLogGetHandler(void);
 
 // provided log handlers
-void acaLogStandardHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args);
-void acaLogBasicHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args);
-void acaLogNullHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args);
+void acaLogStandardHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+void acaLogBasicHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+void acaLogNullHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 
 // wrapper-macro helpers
-#define ACA_LOG_INFO(fmt, ...) acaLog(ACA_LOG_INFO, __FILE__, __LINE__, fmt, __VA_ARGS__);
-#define ACA_LOG_WARN(fmt, ...) acaLog(ACA_LOG_WARN, __FILE__, __LINE__, fmt, __VA_ARGS__);
-#define ACA_LOG_ERROR(fmt, ...) acaLog(ACA_LOG_ERROR, __FILE__, __LINE__, fmt, __VA_ARGS__);
-#define ACA_LOG_FATAL(fmt, ...) acaLog(ACA_LOG_FATAL, __FILE__, __LINE__, fmt, __VA_ARGS__);
-#define ACA_LOG_DEBUG(fmt, ...) acaLog(ACA_LOG_DEBUG, __FILE__, __LINE__, fmt, __VA_ARGS__);
-#define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, __VA_ARGS__);
+#define ACA_LOG_INFO(fmt, ...) acaLog(ACA_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#define ACA_LOG_WARN(fmt, ...) acaLog(ACA_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#define ACA_LOG_ERROR(fmt, ...) acaLog(ACA_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#define ACA_LOG_FATAL(fmt, ...) acaLog(ACA_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#define ACA_LOG_DEBUG(fmt, ...) acaLog(ACA_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
 
 #ifdef ACA_LOG_IMPLEMENTATION
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <threads.h>
+
+#if __STDC_VERSION__ >= 201112L
+#define THREAD_LOCAL _Thread_local
+#elif defined(_WIN32)
+#define THREAD_LOCAL __declspec(thread)
+#else
+#define THREAD_LOCAL __thread
+#endif
 
 // todo: also provide macro setting to disable log tag?
 #ifndef ACA_LOG_TAG
 #define ACA_LOG_TAG "aca"
 #endif // ACA_LOG_TAG
 
-#define STRINGIFY_INTERNAL(x) #x
-#define STRINGIFY(x) STRINGIFY_INTERNAL(x)
-#define LINESTR STRINGIFY(__LINE__)
 #define ACA_LOG_SET_LEVEL(level, levelStr)                                                         \
     do {                                                                                           \
         switch (level) {                                                                           \
@@ -89,21 +94,19 @@ void acaLogNullHandler(aca_log_level level, const char *srcLine, const char *fmt
 
 // returns a singular "file+line" string
 static inline const char *FormatFileLine(const char *file, int line) {
-#if defined(__FILE_NAME__) // prefer non-full path filename (if compiler provides this)
-    return __FILE_NAME__ ":" LINESTR;
-#elif defined(ACA_LOG_CHOP_FILEPATH) // chop __FILE__ and then also stitch line number to it
-    static thread_local char buf[64];
-    const char              *leaf = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
+    static THREAD_LOCAL char buffer[64 + 1] = {0};
+#if defined(ACA_LOG_CHOP_FILEPATH)
+    const char *leaf = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
 #if defined(_WIN32)
     if (leaf == file) {
         leaf = strrchr(file, '\\') ? strrchr(file, '\\') + 1 : file;
     }
 #endif // _WIN32
-    snprintf(buf, sizeof(buf), "%s:%d", leaf, line);
-    return buf;
+    snprintf(buffer, sizeof(buffer) - 1, "%s:%d", leaf, line);
 #else
-    return __FILE__ ":" LINESTR;
-#endif // __FILE_NAME__
+    snprintf(buffer, sizeof(buffer) - 1, "%s:%d", file, line);
+#endif // ACA_LOG_CHOP_FILEPATH
+    return buffer;
 }
 
 static aca_log_handler *gAcaLogHandler = acaLogStandardHandler; // todo: maybe this can be TLS
@@ -119,7 +122,7 @@ void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ..
     va_list args;
     va_start(args, fmt);
     assert(gAcaLogHandler != NULL && "no log handler set for acaLog!");
-    gAcaLogHandler(level, FormatFileLine(file, line), fmt, args);
+    gAcaLogHandler(level, file, line, fmt, args);
     va_end(args);
 }
 
@@ -134,10 +137,8 @@ aca_log_handler *acaLogGetHandler(void) {
 }
 
 // a more classic logging - log_tag, level, file, line, fmt...
-void acaLogStandardHandler(aca_log_level level,
-                           const char   *srcLine,
-                           const char   *fmt,
-                           va_list       args) {
+void acaLogStandardHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
     const char *levelStr;
     ACA_LOG_SET_LEVEL(level, levelStr);
     fprintf(stdout, "[" ACA_LOG_TAG "] ");
@@ -146,13 +147,14 @@ void acaLogStandardHandler(aca_log_level level,
 #else
     fprintf(stdout, "[%5s] ", levelStr);
 #endif // ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS
-    fprintf(stdout, "[%28s] ", srcLine);
+    fprintf(stdout, "[%28s] ", FormatFileLine(file, line));
     vfprintf(stdout, fmt, args);
     fprintf(stdout, "\n");
 }
 
 // barebones logging - level fmt...
-void acaLogBasicHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args) {
+void acaLogBasicHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
     const char *levelStr;
     ACA_LOG_SET_LEVEL(level, levelStr);
     fprintf(stdout, "[%5s] ", levelStr);
@@ -161,7 +163,8 @@ void acaLogBasicHandler(aca_log_level level, const char *srcLine, const char *fm
 }
 
 // this handler just disables/eats the logging
-void acaLogNullHandler(aca_log_level level, const char *srcLine, const char *fmt, va_list args) {
+void acaLogNullHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
     return;
 }
 

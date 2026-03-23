@@ -33,8 +33,4 @@ endif()
 # GoogleTest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest)
-
-target_link_libraries(aca_tests
-    GTest::gtest
-    GTest::gtest_main
-)
+target_link_libraries(aca_tests GTest::gtest_main)

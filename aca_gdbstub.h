@@ -1,6 +1,8 @@
 #ifndef ACA_GDBSTUB_H
 #define ACA_GDBSTUB_H
 
+#include <stddef.h>
+
 enum { ACA_GDBSTUB_SUCCESS, ACA_GDBSTUB_ALLOC_FAILED };
 enum {
     ACA_GDBSTUB_SOFT_BREAKPOINT = (1 << 0),
@@ -72,31 +74,31 @@ void acaDynamicCharBufferFree(aca_dynamic_char_buffer *buf);
 
 #ifdef ACA_GDBSTUB_IMPLEMENTATION
 
-#    include <stdio.h>
-#    include <stdlib.h>
-#    include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#    define ACA_GDBSTUB_ACK_PACKET "+"
-#    define ACA_GDBSTUB_RESEND_PACKET "-"
-#    define ACA_GDBSTUB_EMPTY_PACKET "$#00"
-#    define ACA_GDBSTUB_ERROR_PACKET "$E00#96"
-#    define ACA_GDBSTUB_OK_PACKET "$OK#9a"
-#    define ACA_GDBSTUB_SEND "GDB <--- ACA_GDBSTUB"
-#    define ACA_GDBSTUB_RECV "GDB ---> ACA_GDBSTUB"
+#define ACA_GDBSTUB_ACK_PACKET "+"
+#define ACA_GDBSTUB_RESEND_PACKET "-"
+#define ACA_GDBSTUB_EMPTY_PACKET "$#00"
+#define ACA_GDBSTUB_ERROR_PACKET "$E00#96"
+#define ACA_GDBSTUB_OK_PACKET "$OK#9a"
+#define ACA_GDBSTUB_SEND "GDB <--- ACA_GDBSTUB"
+#define ACA_GDBSTUB_RECV "GDB ---> ACA_GDBSTUB"
 
-#    define ACA_GDBSTUB_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#    define ACA_GDBSTUB_LOG(msg, ...)                                                              \
-        printf("[aca_gdbstub] [ %12s:%-6d ] : " msg, ACA_GDBSTUB_FILENAME, __LINE__, ##__VA_ARGS__)
-#    define ACA_GDBSTUB_HEX_DECODE_ASCII(in, out) out = strtol(in, NULL, 16)
-#    define ACA_GDBSTUB_HEX_ENCODE_ASCII(in, len, out) snprintf(out, len, "%x", in)
-#    define ACA_GDBSTUB_DEC_ENCODE_ASCII(in, len, out) snprintf(out, len, "%d", in)
-#    define ACA_GDBSTUB_CHECK_RET(ret, gdbstubObj)                                                 \
-        do {                                                                                       \
-            gdbstubObj->err = ret;                                                                 \
-            if (gdbstubObj->err != ACA_GDBSTUB_SUCCESS) {                                          \
-                return;                                                                            \
-            }                                                                                      \
-        } while (0)
+#define ACA_GDBSTUB_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define ACA_GDBSTUB_LOG(msg, ...)                                                                  \
+    printf("[aca_gdbstub] [ %12s:%-6d ] : " msg, ACA_GDBSTUB_FILENAME, __LINE__, ##__VA_ARGS__)
+#define ACA_GDBSTUB_HEX_DECODE_ASCII(in, out) out = strtol(in, NULL, 16)
+#define ACA_GDBSTUB_HEX_ENCODE_ASCII(in, len, out) snprintf(out, len, "%x", in)
+#define ACA_GDBSTUB_DEC_ENCODE_ASCII(in, len, out) snprintf(out, len, "%d", in)
+#define ACA_GDBSTUB_CHECK_RET(ret, gdbstubObj)                                                     \
+    do {                                                                                           \
+        gdbstubObj->err = ret;                                                                     \
+        if (gdbstubObj->err != ACA_GDBSTUB_SUCCESS) {                                              \
+            return;                                                                                \
+        }                                                                                          \
+    } while (0)
 
 int acaDynamicCharBufferInit(aca_dynamic_char_buffer *buf, size_t startSize) {
     buf->buffer = (char *)malloc(startSize * sizeof(char));
