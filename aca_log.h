@@ -146,14 +146,14 @@ static double GetTimestamp() {
 }
 
 static aca_log_handler *gAcaLogHandler = acaLogStandardHandler; // todo: maybe this can be TLS
-#if defined(ACA_LOG_ENABLE_STANDARD_HANDLER_LEVEL_COLORS)
+#if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
 static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
                                              ACA_LOG_COLOR_MAGENTA,
                                              ACA_LOG_COLOR_GREEN,
                                              ACA_LOG_COLOR_YELLOW,
                                              ACA_LOG_COLOR_RED,
                                              ACA_LOG_COLOR_RED};
-#endif // ACA_LOG_ENABLE_STANDARD_HANDLER_LEVEL_COLORS
+#endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS
 
 // main log entrypoint
 void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...) {
@@ -174,7 +174,7 @@ aca_log_handler *acaLogGetHandler(void) {
     return gAcaLogHandler;
 }
 
-// a more classic logging - log_tag, level, file, line, fmt...
+// a more classic and configurable logging - log_tag, timestamp, level, file, line, fmt...
 void acaLogStandardHandler(
     aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
     const char *levelStr;
@@ -183,15 +183,20 @@ void acaLogStandardHandler(
 #if defined(ACA_LOG_TAG)
     fprintf(stdout, "[" ACA_LOG_TAG "] ");
 #endif // ACA_LOG_TAG
-#if defined(ACA_LOG_ENABLE_STANDARD_HANDLER_TIMESTAMP)
+#if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP)
     fprintf(stdout, "[%10.4f] ", GetTimestamp());
-#endif // ACA_LOG_ENABLE_STANDARD_HANDLER_TIMESTAMP
-#if defined(ACA_LOG_ENABLE_STANDARD_HANDLER_LEVEL_COLORS)
+#endif // ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP
+#if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL)
+#if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
     fprintf(stdout, "[%s%5s%s] ", gAcaLogLevelColorMap[level], levelStr, ACA_LOG_COLOR_RESET);
 #else
     fprintf(stdout, "[%5s] ", levelStr);
-#endif // ACA_LOG_ENABLE_STANDARD_HANDLER_LEVEL_COLORS
+#endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS
+#endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL
+#if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE)
     fprintf(stdout, "[%28s] ", FormatFileLine(file, line));
+#endif // ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE
+    
     vfprintf(stdout, fmt, args);
     fprintf(stdout, "\n");
 }
