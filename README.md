@@ -264,6 +264,9 @@ typedef void(aca_log_handler)(
 // example handlers:
 // prints [timestamp] [level] [file:line] msg (to stdout)
 void acaLogStandardHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+// prints [timestamp] [level] [file:line] msg (to file)
+void acaLogStandardFileHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 // prints [level] msg (to stdout)
 void acaLogBasicHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 // disables/eats the logs
@@ -278,9 +281,11 @@ There are a few config macros for user control. These need to be defined when de
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE // disable file and line in standard handler
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP // disable timestamp in standard handler
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS // disable log level colors in standard handler
+#define ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME "/tmp/dump.log" // filename/path to standard file handler (default: dump.log)
+#define ACA_LOG_TO_STANDARD_FILE_HANDLER_ACCESS_STR "a" // access mode to standard file handler (default: w)
 #define ACA_LOG_STRIP_LOGGING_MACROS // strips-away any ACA_LOG_[LEVEL] macro usages
 #define ACA_LOG_CHOP_FILEPATH // chops the full prefix-path from __FILE__
-#define ACA_LOG_TAG "MyProject" // adds project tag to prefix (default is "aca")
+#define ACA_LOG_TAG "MyProject" // adds project tag to prefix
 
 #define ACA_LOG_IMPLEMENTATION
 #include "aca_log.h"
@@ -290,42 +295,24 @@ There are a few config macros for user control. These need to be defined when de
 
 The following is an example usage of this utility:
 ```c
-#define ACA_LOG_IMPLEMENTATION
 #define ACA_LOG_CHOP_FILEPATH
+#define ACA_LOG_TO_STANDARD_FILE_HANDLER_ACCESS_STR "a"
+#define ACA_LOG_IMPLEMENTATION
 #include "aca_log.h"
 
-#include <stdio.h>
-
-// user custom handler routes logging to a file
-void logToFileHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
-    FILE* fp = fopen("dump.log", "a");
-    if (!fp) {
-        printf("Failed to open \"dump.log\"...");
-        return;
-    }
-    switch (level) {
-        case ACA_LOG_INFO:
-            fprintf(fp, "[ INFO] ");
-            break;
-        case ACA_LOG_WARN:
-            fprintf(fp, "[ WARN] ");
-            break;
-        case ACA_LOG_ERROR:
-            fprintf(fp, "[ERROR] ");
-            break;
-        default:
-            // ignore all other types
-            fclose(fp);
-            return;
-    }
-    vfprintf(fp, fmt, args);
-    fprintf(fp, "\n");
-    fclose(fp);
+// user custom handler routes logging to stdout and dump.log
+void customLogHandler(
+    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+    va_list argsCopy;
+    va_copy(argsCopy, args);
+    acaLogStandardHandler(level, file, line, fmt, args);
+    acaLogStandardFileHandler(level, file, line, fmt, argsCopy);
+    va_end(argsCopy);
 }
 
 int main(void) {
-    // logs to stdout
-    acaLogSetHandler(acaLogStandardHandler);
+    acaLogSetHandler(customLogHandler);
+
     ACA_LOG_INFO("Hello World!");
     usleep(200000);
     ACA_LOG_WARN("Value1: %d, Value2: %f...", 555, 24.56);
@@ -333,16 +320,11 @@ int main(void) {
 
     aca_log_handler *lastHandler = acaLogGetHandler();
 
-    // logs to user file now
-    acaLogSetHandler(logToFileHandler);
-    ACA_LOG_INFO("Hello World!");
-    ACA_LOG_WARN("Value1: %d, Value2: %f...", 555, 24.56);
-
     // disables all logging
     acaLogSetHandler(acaLogNullHandler);
     ACA_LOG_ERROR("Should not be logged!");
 
-    // back to standard handler
+    // back to custom handler
     acaLogSetHandler(lastHandler);
     ACA_LOG_DEBUG("Done...");
 
@@ -351,13 +333,14 @@ int main(void) {
 ```
 ```
 $ cc main.c && ./a.out
-[    0.0000] [ INFO] [                   test.c:37] Hello World!
-[    0.2175] [ WARN] [                   test.c:39] Value1: 555, Value2: 24.560000...
-[    0.3279] [DEBUG] [                   test.c:55] Done...
+[    0.0000] [ INFO] [                   test.c:19] Hello World!
+[    0.2173] [ WARN] [                   test.c:21] Value1: 555, Value2: 24.560000...
+[    0.3242] [DEBUG] [                   test.c:32] Done...
 
 $ cat dump.log
-[ INFO] Hello World!
-[ WARN] Value1: 555, Value2: 24.560000...
+[    0.0002] [ INFO] [                   test.c:19] Hello World!
+[    0.2173] [ WARN] [                   test.c:21] Value1: 555, Value2: 24.560000...
+[    0.3243] [DEBUG] [                   test.c:32] Done...
 ```
 
 ### Thread Safety
