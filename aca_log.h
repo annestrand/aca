@@ -38,12 +38,21 @@ void acaLogNullHandler(
     aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 
 // wrapper-macro helpers
-#define ACA_LOG_INFO(fmt, ...) acaLog(ACA_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define ACA_LOG_WARN(fmt, ...) acaLog(ACA_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define ACA_LOG_ERROR(fmt, ...) acaLog(ACA_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define ACA_LOG_FATAL(fmt, ...) acaLog(ACA_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define ACA_LOG_DEBUG(fmt, ...) acaLog(ACA_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
-#define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
+#if !defined(ACA_LOG_STRIP_LOGGING_MACROS)
+#define ACA_LOG_INFO(fmt, ...) acaLog(ACA_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define ACA_LOG_WARN(fmt, ...) acaLog(ACA_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define ACA_LOG_ERROR(fmt, ...) acaLog(ACA_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define ACA_LOG_FATAL(fmt, ...) acaLog(ACA_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define ACA_LOG_DEBUG(fmt, ...) acaLog(ACA_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#else
+#define ACA_LOG_INFO(fmt, ...)
+#define ACA_LOG_WARN(fmt, ...)
+#define ACA_LOG_ERROR(fmt, ...) 
+#define ACA_LOG_FATAL(fmt, ...) 
+#define ACA_LOG_DEBUG(fmt, ...) 
+#define ACA_LOG_TRACE(fmt, ...) 
+#endif // ACA_LOG_STRIP_LOGGING_MACROS
 
 #ifdef ACA_LOG_IMPLEMENTATION
 

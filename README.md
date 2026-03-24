@@ -278,6 +278,7 @@ There are a few config macros for user control. These need to be defined when de
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE // disable file and line in standard handler
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP // disable timestamp in standard handler
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS // disable log level colors in standard handler
+#define ACA_LOG_STRIP_LOGGING_MACROS // strips-away any ACA_LOG_[LEVEL] macro usages
 #define ACA_LOG_CHOP_FILEPATH // chops the full prefix-path from __FILE__
 #define ACA_LOG_TAG "MyProject" // adds project tag to prefix (default is "aca")
 
