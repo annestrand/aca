@@ -1,21 +1,21 @@
 # aca
 
-C/C++ header file libraries/utilities
+Single C header file libraries/utilities
 
 ## Features
 - Dependency free (only libc)
-- Implemented as a single C/C++ header files
 - Cross platform (Windows, macOS, Linux)
+- Portable - usable in C or C++ (other languages as well if bindings are provided)
 
 library | category | description
 ------- | -------- | -----------
-**[aca_argparse.h](#aca_argparseh)** | utility | simple C/C++ argument parsing utility
+**[aca_argparse.h](#aca_argparseh)** | utility | simple argument parsing utility
 **[aca_gdbstub.h](#aca_gdbstubh)** | debug | minimal GDB Remote Serial Protocol utility
 **[aca_log.h](#aca_logh)** | debug | printf-style logging library
 
 ## How to use libraries/utilities
 There are two parts, the header (contains only the declarations), and a user-created source file
-to compile the definition/implementation of that header library (exactly like the stb header libraries).
+to compile the definition/implementation of that header library (exactly like the [stb](https://github.com/nothings/stb) header libraries).
 
 Below is an example usage in user's source code file `my_app.c`:
 ```c
@@ -50,7 +50,7 @@ cmake -Bbuild && cmake --build build
 
 ## aca_argparse.h:
 
-A simple C/C++ argument parsing utility.
+A simple argument parsing utility.
 
 - Does **not** use heap allocation(s)
 - Allows for iteration of non-option args (after doing a initial parse)
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
 A target-agnostic minimal GDB stub that interfaces using the GDB Remote Serial Protocol.
 
 - Implements the core GDB Remote Serial Protocol
-- Implemented as a single C/C++ header file
+- Implemented as a single C header file
 - Cross platform (Windows, macOS, Linux)
 
 The purpose of this utility is to abstract-away the GDB Remote Serial Protocol from the
@@ -300,6 +300,19 @@ The following is an example usage of this utility:
 #define ACA_LOG_IMPLEMENTATION
 #include "aca_log.h"
 
+#ifdef _WIN32
+#include <windows.h>
+void usleep(__int64 usec) {
+    HANDLE timer;
+    LARGE_INTEGER ft;
+    ft.QuadPart = -(10 * usec); 
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+}
+#endif
+
 // user custom handler routes logging to stdout and dump.log
 void customLogHandler(
     aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
@@ -333,14 +346,14 @@ int main(void) {
 ```
 ```
 $ cc main.c && ./a.out
-[    0.0000] [ INFO] [                   test.c:19] Hello World!
-[    0.2173] [ WARN] [                   test.c:21] Value1: 555, Value2: 24.560000...
-[    0.3242] [DEBUG] [                   test.c:32] Done...
+[    0.0000] [ INFO] [                   test.c:32] Hello World!
+[    0.2177] [ WARN] [                   test.c:34] Value1: 555, Value2: 24.560000...
+[    0.3256] [DEBUG] [                   test.c:45] Done...
 
 $ cat dump.log
-[    0.0002] [ INFO] [                   test.c:19] Hello World!
-[    0.2173] [ WARN] [                   test.c:21] Value1: 555, Value2: 24.560000...
-[    0.3243] [DEBUG] [                   test.c:32] Done...
+[    0.0002] [ INFO] [                   test.c:32] Hello World!
+[    0.2178] [ WARN] [                   test.c:34] Value1: 555, Value2: 24.560000...
+[    0.3256] [DEBUG] [                   test.c:45] Done...
 ```
 
 ### Thread Safety
