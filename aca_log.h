@@ -13,14 +13,14 @@
 #define ACA_LOG_COLOR_WHITE "\033[0;37m"
 #define ACA_LOG_COLOR_RESET "\033[0m"
 
-enum aca_log_level {
+typedef enum aca_log_level {
     ACA_LOG_TRACE = 0,
     ACA_LOG_DEBUG,
     ACA_LOG_INFO,
     ACA_LOG_WARN,
     ACA_LOG_ERROR,
     ACA_LOG_FATAL
-};
+} aca_log_level;
 
 typedef void(aca_log_handler)(
     aca_log_level level, const char *file, int line, const char *fmt, va_list args);
@@ -46,6 +46,14 @@ void acaLogNullHandler(
 #define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, ##__VA_ARGS__);
 
 #ifdef ACA_LOG_IMPLEMENTATION
+
+#ifndef __cplusplus
+  #ifndef bool
+    #define bool int
+    #define true 1
+    #define false 0
+  #endif
+#endif
 
 #include <assert.h>
 #include <stdio.h>
