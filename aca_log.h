@@ -13,6 +13,9 @@
 #define ACA_LOG_COLOR_WHITE "\033[0;37m"
 #define ACA_LOG_COLOR_RESET "\033[0m"
 
+#define ACA_LOG_HANDLER(name)                                                                      \
+    void name(aca_log_level level, const char *file, int line, const char *fmt, va_list args)
+
 typedef enum aca_log_level {
     ACA_LOG_TRACE = 0,
     ACA_LOG_DEBUG,
@@ -30,14 +33,10 @@ void             acaLogSetHandler(aca_log_handler *handler);
 aca_log_handler *acaLogGetHandler(void);
 
 // provided log handlers
-void acaLogStandardHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-void acaLogBasicHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-void acaLogNullHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-void acaLogStandardFileHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+ACA_LOG_HANDLER(acaLogStandardHandler);
+ACA_LOG_HANDLER(acaLogBasicHandler);
+ACA_LOG_HANDLER(acaLogNullHandler);
+ACA_LOG_HANDLER(acaLogStandardFileHandler);
 
 // wrapper-macro helpers
 #if !defined(ACA_LOG_STRIP_LOGGING_MACROS)
@@ -215,14 +214,12 @@ static inline void acaLogStandardHandlerImpl(
 }
 
 // a more classic and configurable logging - log_tag, timestamp, level, file, line, fmt...
-void acaLogStandardHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+ACA_LOG_HANDLER(acaLogStandardHandler) {
     return acaLogStandardHandlerImpl(stdout, level, file, line, fmt, args);
 }
 
 // barebones logging - level fmt...
-void acaLogBasicHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+ACA_LOG_HANDLER(acaLogBasicHandler) {
     const char *levelStr;
     ACA_LOG_SET_LEVEL(level, levelStr);
     fprintf(stdout, "[%5s] ", levelStr);
@@ -231,14 +228,12 @@ void acaLogBasicHandler(
 }
 
 // this handler just disables/eats the logging
-void acaLogNullHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+ACA_LOG_HANDLER(acaLogNullHandler) {
     return;
 }
 
 // same as standard handler but routes to a file vs. stdout
-void acaLogStandardFileHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+ACA_LOG_HANDLER(acaLogStandardFileHandler) {
     FILE       *fp             = NULL;
     const char *dumpFile       = "dump.log";
     const char *dumpFileAccess = "w";

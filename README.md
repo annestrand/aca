@@ -303,10 +303,10 @@ The following is an example usage of this utility:
 #ifdef _WIN32
 #include <windows.h>
 void usleep(__int64 usec) {
-    HANDLE timer;
+    HANDLE        timer;
     LARGE_INTEGER ft;
-    ft.QuadPart = -(10 * usec); 
-    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    ft.QuadPart = -(10 * usec);
+    timer       = CreateWaitableTimer(NULL, TRUE, NULL);
     SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
@@ -314,8 +314,7 @@ void usleep(__int64 usec) {
 #endif
 
 // user custom handler routes logging to stdout and dump.log
-void customLogHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+ACA_LOG_HANDLER(customLogHandler) {
     va_list argsCopy;
     va_copy(argsCopy, args);
     acaLogStandardHandler(level, file, line, fmt, args);
@@ -346,14 +345,14 @@ int main(void) {
 ```
 ```
 $ cc main.c && ./a.out
-[    0.0000] [ INFO] [                   test.c:32] Hello World!
-[    0.2177] [ WARN] [                   test.c:34] Value1: 555, Value2: 24.560000...
-[    0.3256] [DEBUG] [                   test.c:45] Done...
+[    0.0000] [ INFO] [                   test.c:31] Hello World!
+[    0.2181] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
+[    0.3207] [DEBUG] [                   test.c:44] Done...
 
 $ cat dump.log
-[    0.0002] [ INFO] [                   test.c:32] Hello World!
-[    0.2178] [ WARN] [                   test.c:34] Value1: 555, Value2: 24.560000...
-[    0.3256] [DEBUG] [                   test.c:45] Done...
+[    0.0002] [ INFO] [                   test.c:31] Hello World!
+[    0.2182] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
+[    0.3208] [DEBUG] [                   test.c:44] Done...
 ```
 
 ### Thread Safety
