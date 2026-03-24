@@ -262,9 +262,9 @@ typedef void(aca_log_handler)(
     aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 
 // example handlers:
-// prints [tag] [level] [file:line] msg - to stdout (allows for colored-level logging)
+// prints [timestamp] [level] [file:line] msg (to stdout)
 void acaLogStandardHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-// prints [level] msg - to stdout
+// prints [level] msg (to stdout)
 void acaLogBasicHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
 // disables/eats the logs
 void acaLogNullHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
@@ -274,7 +274,10 @@ void acaLogNullHandler(aca_log_level level, const char *file, int line, const ch
 
 There are a few config macros for user control. These need to be defined when defining the implementation source:
 ```c
-#define ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS // enable log level colors in standard handler
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL // disable log level in standard handler
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE // disable file and line in standard handler
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP // disable timestamp in standard handler
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS // disable log level colors in standard handler
 #define ACA_LOG_CHOP_FILEPATH // chops the full prefix-path from __FILE__
 #define ACA_LOG_TAG "MyProject" // adds project tag to prefix (default is "aca")
 
@@ -286,6 +289,8 @@ There are a few config macros for user control. These need to be defined when de
 
 The following is an example usage of this utility:
 ```c
+#define ACA_LOG_IMPLEMENTATION
+#define ACA_LOG_CHOP_FILEPATH
 #include "aca_log.h"
 
 #include <stdio.h>
@@ -321,7 +326,9 @@ int main(void) {
     // logs to stdout
     acaLogSetHandler(acaLogStandardHandler);
     ACA_LOG_INFO("Hello World!");
+    usleep(200000);
     ACA_LOG_WARN("Value1: %d, Value2: %f...", 555, 24.56);
+    usleep(100000);
 
     aca_log_handler *lastHandler = acaLogGetHandler();
 
@@ -343,9 +350,9 @@ int main(void) {
 ```
 ```
 $ cc main.c && ./a.out
-[aca] [ INFO] [             main.c:35] Hello World!
-[aca] [ WARN] [             main.c:36] Value1: 555, Value2: 24.560000...
-[aca] [DEBUG] [             main.c:51] Done...
+[    0.0000] [ INFO] [                   test.c:37] Hello World!
+[    0.2175] [ WARN] [                   test.c:39] Value1: 555, Value2: 24.560000...
+[    0.3279] [DEBUG] [                   test.c:55] Done...
 
 $ cat dump.log
 [ INFO] Hello World!
