@@ -1,0 +1,19 @@
+# header library specific settings
+If:
+  PathMatch: .*\.h
+  PathExclude: .*/.*  # excludes any file inside a subdirectory
+CompileFlags:
+  Add: [
+    -DACA_LOG_IMPLEMENTATION=1,
+    -DACA_GDBSTUB_IMPLEMENTATION=1,
+    -DACA_ARGPARSE_IMPLEMENTATION=1
+  ]
+Diagnostics:
+  ClangTidy:
+    Remove: [misc-definitions-in-headers]
+
+---
+
+# global settings
+Diagnostics:
+  Suppress: [redefinition, builtin_definition]
