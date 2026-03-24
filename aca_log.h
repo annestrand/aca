@@ -58,6 +58,12 @@ void acaLogNullHandler(
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <time.h>
+#endif
 
 #if __STDC_VERSION__ >= 201112L
 #define THREAD_LOCAL _Thread_local
@@ -117,6 +123,33 @@ static inline const char *FormatFileLine(const char *file, int line) {
     return buffer;
 }
 
+// returns a monotonic timestamp value
+static double GetTimestamp() {
+    static int initialized = 0;
+    static double start_time = 0;
+#ifdef _WIN32
+    static LARGE_INTEGER frequency;
+    LARGE_INTEGER counter;
+    if (!initialized) {
+        QueryPerformanceFrequency(&frequency);
+        QueryPerformanceCounter(&counter);
+        start_time = (double)counter.QuadPart / (double)frequency.QuadPart;
+        initialized = 1;
+    }
+    QueryPerformanceCounter(&counter);
+    return ((double)counter.QuadPart / (double)frequency.QuadPart) - start_time;
+#else
+    struct timespec ts;
+    if (!initialized) {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        start_time = ts.tv_sec + (ts.tv_nsec / 1000000000.0);
+        initialized = 1;
+    }
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (ts.tv_sec + (ts.tv_nsec / 1000000000.0)) - start_time;
+#endif
+}
+
 static aca_log_handler *gAcaLogHandler = acaLogStandardHandler; // todo: maybe this can be TLS
 #if defined(ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS)
 static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
@@ -152,6 +185,9 @@ void acaLogStandardHandler(
     const char *levelStr;
     ACA_LOG_SET_LEVEL(level, levelStr);
     fprintf(stdout, "[" ACA_LOG_TAG "] ");
+#if defined(ACA_LOG_ENABLE_STANDARD_HANDLER_TIMESTAMP)
+    fprintf(stdout, "[%10.4f] ", GetTimestamp());
+#endif // ACA_LOG_ENABLE_STANDARD_HANDLER_TIMESTAMP
 #if defined(ACA_LOG_ENABLE_DEFAULT_HANDLER_LEVEL_COLORS)
     fprintf(stdout, "[%s%5s%s] ", gAcaLogLevelColorMap[level], levelStr, ACA_LOG_COLOR_RESET);
 #else
