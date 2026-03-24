@@ -104,7 +104,7 @@ void acaLogNullHandler(
 // returns a singular "file+line" string
 static inline const char *FormatFileLine(const char *file, int line) {
     static THREAD_LOCAL char buffer[64 + 1] = {0};
-#if defined(ACA_LOG_CHOP_FILEPATH)
+#if defined(ACA_LOG_CHOP_FILEPATH) // since some compilers treat __FILE__ as full path
     const char *leaf = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
 #if defined(_WIN32)
     if (leaf == file) {
