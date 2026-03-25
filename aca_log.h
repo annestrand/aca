@@ -155,7 +155,7 @@ static double GetTimestamp() {
 #endif
 }
 
-static aca_log_handler *gAcaLogHandler = acaLogStandardHandler; // todo: maybe this can be TLS
+THREAD_LOCAL aca_log_handler *tl_acaLogHandler = acaLogStandardHandler;
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
 static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
                                              ACA_LOG_COLOR_MAGENTA,
@@ -169,19 +169,19 @@ static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
 void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    assert(gAcaLogHandler != NULL && "no log handler set for acaLog!");
-    gAcaLogHandler(level, file, line, fmt, args);
+    assert(tl_acaLogHandler != NULL && "no log handler set for acaLog!");
+    tl_acaLogHandler(level, file, line, fmt, args);
     va_end(args);
 }
 
 // sets a new handler for the acaLog routine
 void acaLogSetHandler(aca_log_handler *handler) {
-    gAcaLogHandler = handler;
+    tl_acaLogHandler = handler;
 }
 
 // returns current log handler for acaLog routine
 aca_log_handler *acaLogGetHandler(void) {
-    return gAcaLogHandler;
+    return tl_acaLogHandler;
 }
 
 static inline void acaLogStandardHandlerImpl(

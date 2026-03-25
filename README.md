@@ -354,7 +354,3 @@ $ cat dump.log
 [    0.2182] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
 [    0.3208] [DEBUG] [                   test.c:44] Done...
 ```
-
-### Thread Safety
-The implementation keeps track of a static handler ptr during runtime. At the moment, any Set/Get handler routines are **NOT THREAD SAFE**. 
-
