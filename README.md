@@ -12,6 +12,7 @@ library | category | description
 **[aca_argparse.h](#aca_argparseh)** | utility | simple argument parsing utility
 **[aca_gdbstub.h](#aca_gdbstubh)** | debug | minimal GDB Remote Serial Protocol utility
 **[aca_log.h](#aca_logh)** | debug | printf-style logging library
+**[aca_ring_ds.h](#aca_ring_dsh)** | utility | ring buffer/queue data structure
 
 ## How to use libraries/utilities
 There are two parts, the header (contains only the declarations), and a user-created source file
@@ -354,3 +355,173 @@ $ cat dump.log
 [    0.2182] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
 [    0.3208] [DEBUG] [                   test.c:44] Done...
 ```
+---
+
+## aca_ring_ds.h:
+
+A ring buffer and ring queue data structure library.
+
+- Generic (can use whatever type user provides)
+- Can use either stack allocation or allocate on the heap
+
+### Design/API
+
+The key design of this data structure (DS) uses an internal **"shadow-header"** that
+holds the data structure's items at an offset *behind* the base DS pointer.
+```
+DS: [ (header) --- (data0)-(data1) ... (dataN) ]
+                   ^
+                   *base_DS_pointer (what user holds)
+```
+
+Thus, it is important to note a few things:
+
+- Do **NOT** attempt to mutate the base DS pointer itself
+- User is responsible to understand the DS pointer *hides* the underlying header/type
+- Base DS pointer *can* reallocate, always use returned base DS pointer in those cases (if routine returns ptr)
+- If heap allocated, do **NOT** call free() on base DS pointer (use library-provided free routine instead)
+
+Below are the API structures for both the ring buffer and ring queue: 
+```c
+// Ring Buffer API
+void  *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity);
+void   acaRingBufferFree(void *buffer);
+size_t acaRingBufferCapacity(void *buffer);
+size_t acaRingBufferFront(void *buffer);
+void   acaRingBufferNext(void *buffer);
+// create macro internally expands to either a C++ wrapper or direct C call
+#define acaRingBufferCreate(T, size)
+```
+The ring buffer is pretty simple, allows one to iterate over its range fully and provides
+wrap-around-safe iteration. Also provides a peek/front operation to get current head value
+without advancing. If capacity is a pow2 value, bitwise-and wrap logic is used over the more
+expensive modulo operation. 
+
+```c
+// Ring Queue API
+void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
+void   acaRingQueueFree(void *queue);
+size_t acaRingQueueSize(void *queue);
+size_t acaRingQueueCapacity(void *queue);
+void   acaRingQueueEnqueue(void *queue, const void *elem);
+size_t acaRingQueueDequeue(void *queue);
+size_t acaRingQueueFront(void *queue);
+int    acaRingQueueEmpty(void *queue);
+int    acaRingQueueFull(void *queue);
+// create macro internally expands to either a C++ wrapper or direct C call
+#define acaRingQueueCreate(T, config)
+```
+The ring queue is just an extension of the ring buffer. Introduces head and tail internal iterators
+to provide FIFO mechanics. Size will provide items enqueued - capacity gives the whole structure size.
+
+Currently the ring queue is implemented as **"waste-one-slot"**. This means that the queue's true
+capacity will be `(capacity-1)`.
+
+### Config/Helpers
+```c
+// Ring Buffer Helpers
+#define ACA_RING_BUFFER_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
+
+// Ring Queue Helpers
+#define ACA_RING_QUEUE_RESERVE_FOR(T, count) ACA_RING_QUEUE_RESERVE(sizeof(T), (count))
+
+// Ring Queue Config
+typedef enum aca_ring_queue_ds_full_behavior {
+    ACA_RING_QUEUE_OVERWRITE,
+    ACA_RING_QUEUE_REJECT,
+    ACA_RING_QUEUE_ASSERT,
+    ACA_RING_QUEUE_RESIZE,
+} aca_ring_queue_ds_full_behavior_t;
+
+typedef struct aca_ring_queue_ds_config {
+    size_t                            capacity;
+    aca_ring_queue_ds_full_behavior_t fullBehavior;
+} aca_ring_queue_config_t;
+```
+For a Ring Queue, user will pass a config struct during queue create.
+
+The main config is how a Ring Queue will handle subsequent enqueue ops during a `full-event`:
+
+1. `OVERWRITE`: this will cause queue to write-over each item (on enqueue) from the front
+2. `REJECT`: this will ignore any new enqueue op
+3. `ASSERT`: this will trigger an assert if user tries to enqueue on full
+4. `RESIZE`: this will cause queue to resize (double itself) (⚠️ NOT IMPLEMENTED YET ⚠️)
+
+### Example Usage
+```c
+#define ACA_RING_DS_IMPLEMENTATION
+#include "aca_ring_ds.h"
+
+#include <stdio.h>
+
+int main() {
+    // stack allocate ring buffer (ensure buffer is large enough for data structure)
+    printf("Stack-allocated ring buffer...\n");
+    char buffer[ACA_RING_BUFFER_RESERVE_FOR(int, 8)];
+    int *ringBuffer = (int *)buffer;
+    acaRingBufferCreate(ringBuffer, 4); // stack-allocate ring buffer of 4 int's
+
+    for (int i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
+        ringBuffer[i] = i + 1;
+    }
+
+    // loop around a few times
+    for (int i = 0; i < 12; ++i) {
+        size_t head = acaRingBufferFront(ringBuffer);
+        printf("Index: %d, Head: %zu, Value: %d\n", i, head, ringBuffer[head]);
+        acaRingBufferNext(ringBuffer);
+    }
+
+    // heap allocate ring queue
+    printf("\nHeap-allocated ring queue...\n");
+    float                  *ringQueue = NULL;
+    aca_ring_queue_config_t config    = {.capacity = 6, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    acaRingQueueCreate(ringQueue, &config);
+
+    // ring queue is implemented as "waste-one-slot", so it can only store (capacity-1) items
+    float values[] = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f};
+    for (int i = 0; i < acaRingQueueCapacity(ringQueue); ++i) {
+        if (acaRingQueueFull(ringQueue)) {
+            printf("Queue is full at iteration %d, overwriting...\n", i);
+        }
+        acaRingQueueEnqueue(ringQueue, &values[i]);
+    }
+    printf("QueueFull? : %s\n", acaRingQueueFull(ringQueue) ? "YES" : "NO");
+
+    // in this example, 10.0f is overwritten - so dequeue loop with show [20.0f - 60.0f]
+    for (int i = acaRingQueueFront(ringQueue); i < acaRingQueueCapacity(ringQueue); ++i) {
+        size_t dequeueIndex = acaRingQueueDequeue(ringQueue);
+        printf("QueueSize: %zu, Item: %f\n", acaRingQueueSize(ringQueue), ringQueue[dequeueIndex]);
+    }
+    printf("QueueEmpty? : %s\n", acaRingQueueEmpty(ringQueue) ? "YES" : "NO");
+    acaRingQueueFree(ringQueue);
+
+    return 0;
+}
+```
+```
+Stack-allocated ring buffer...
+Index: 0, Head: 0, Value: 1
+Index: 1, Head: 1, Value: 2
+Index: 2, Head: 2, Value: 3
+Index: 3, Head: 3, Value: 4
+Index: 4, Head: 0, Value: 1
+Index: 5, Head: 1, Value: 2
+Index: 6, Head: 2, Value: 3
+Index: 7, Head: 3, Value: 4
+Index: 8, Head: 0, Value: 1
+Index: 9, Head: 1, Value: 2
+Index: 10, Head: 2, Value: 3
+Index: 11, Head: 3, Value: 4
+
+Heap-allocated ring queue...
+Queue is full at iteration 5, overwriting...
+QueueFull? : YES
+QueueSize: 4, Item: 20.000000
+QueueSize: 3, Item: 30.000000
+QueueSize: 2, Item: 40.000000
+QueueSize: 1, Item: 50.000000
+QueueSize: 0, Item: 60.000000
+QueueEmpty? : YES
+```
+

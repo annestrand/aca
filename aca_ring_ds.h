@@ -17,7 +17,7 @@ typedef struct aca_ring_buffer_ds_header {
 
 #define ACA_RING_BUFFER_RESERVE(elemSize, count)                                                   \
     ((count) * (elemSize) + sizeof(aca_ring_buffer_ds_header_t))
-#define ACA_RING_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
+#define ACA_RING_BUFFER_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
 
 // acaRingBuffer API
 void  *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity);

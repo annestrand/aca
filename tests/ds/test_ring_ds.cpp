@@ -7,11 +7,11 @@ TEST(ring_buffer, fixed_capacity) {
     acaRingBufferCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
         ringBuffer[i] = i + 1;
     }
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
         EXPECT_EQ(ringBuffer[i], i + 1);
     }
 }
@@ -48,22 +48,22 @@ TEST(ring_buffer, next) {
 
 TEST(ring_queue, fixed_capacity) {
     char                    buffer[ACA_RING_QUEUE_RESERVE(float, 8)];
-    float                  *ringBuffer = (float *)buffer;
-    aca_ring_queue_config_t config     = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
-    acaRingQueueCreate(ringBuffer, &config);
-    EXPECT_NE(ringBuffer, nullptr);
+    float                  *ringQueue = (float *)buffer;
+    aca_ring_queue_config_t config    = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    acaRingQueueCreate(ringQueue, &config);
+    EXPECT_NE(ringQueue, nullptr);
 
     float values[] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
     for (int i = 0; i < 6; ++i) {
-        acaRingQueueEnqueue(ringBuffer, &values[i]);
+        acaRingQueueEnqueue(ringQueue, &values[i]);
     }
 
     // we overwrote the first 4 elements, start there and dequeue
     for (int i = 3; i < 7; ++i) {
-        if (!acaRingQueueEmpty(ringBuffer)) {
-            size_t frontIndex = acaRingQueueDequeue(ringBuffer);
-            EXPECT_EQ(frontIndex, (size_t)(i % 4));       // should return indices
-            EXPECT_EQ(ringBuffer[frontIndex], values[i]); // should return correct values
+        if (!acaRingQueueEmpty(ringQueue)) {
+            size_t frontIndex = acaRingQueueDequeue(ringQueue);
+            EXPECT_EQ(frontIndex, (size_t)(i % 4));      // should return indices
+            EXPECT_EQ(ringQueue[frontIndex], values[i]); // should return correct values
         }
     }
 }
