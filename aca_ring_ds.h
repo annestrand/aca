@@ -16,7 +16,7 @@ typedef struct aca_ring_buffer_ds_header {
 } aca_ring_buffer_ds_header_t;
 
 #define ACA_RING_BUFFER_RESERVE(elemSize, count)                                                   \
-    (((count) * (elemSize)) + sizeof(aca_ring_buffer_ds_header_t))
+    ((count) * (elemSize) + sizeof(aca_ring_buffer_ds_header_t))
 #define ACA_RING_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
 
 // acaRingBuffer API
@@ -62,7 +62,7 @@ typedef struct aca_ring_queue_ds_header {
 } aca_ring_queue_ds_header_t;
 
 #define ACA_RING_QUEUE_RESERVE(elemSize, count)                                                    \
-    (((count) * (elemSize)) + sizeof(aca_ring_queue_ds_header_t))
+    ((count) * (sizeof(elemSize)) + sizeof(aca_ring_queue_ds_header_t))
 #define ACA_RING_QUEUE_RESERVE_FOR(T, count) ACA_RING_QUEUE_RESERVE(sizeof(T), (count))
 
 typedef struct aca_ring_queue_ds_config {
@@ -85,9 +85,9 @@ template <typename T>
 static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
     return (T *)acaRingQueueCreateImpl(queue, elemSize, config);
 }
-#define acaRingQueueCreate(T, size) ((T) = acaRingQueueCreateCpp((T), (sizeof(*(T))), (size)))
+#define acaRingQueueCreate(T, config) ((T) = acaRingQueueCreateCpp((T), (sizeof(*(T))), (config)))
 #else
-#define acaRingQueueCreate(T, size) (T) = (acaRingQueueCreateImpl((T), (sizeof(*(T))), (size)))
+#define acaRingQueueCreate(T, config) (T) = (acaRingQueueCreateImpl((T), (sizeof(*(T))), (config)))
 #endif // __cplusplus
 
 #ifdef ACA_RING_DS_IMPLEMENTATION
