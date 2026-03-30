@@ -293,9 +293,12 @@ void acaRingQueueEnqueue(void *queue, const void *elem) {
                 // assert failure
                 assert(0 && "ring queue is full!");
                 return;
+            case ACA_RING_QUEUE_DYNAMIC_DS:
+            case ACA_RING_QUEUE_DYNAMIC_POW2_DS:
+                assert(0 && "dynamic resizing is not implemented yet!");
+                return;
             default:
-                // todo: for dynamic resizing, we can implement it here in the future
-                assert(0 && "invalid ring queue type!");
+                assert(0 && "unreachable");
                 return;
         }
     }
