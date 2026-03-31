@@ -225,3 +225,59 @@ TEST(ring_queue, full_behavior_assert) {
 
     acaRingQueueFree(queue);
 }
+
+TEST(ring_queue, dynamic_resize) {
+    double                 *queue  = nullptr;
+    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_RESIZE};
+    acaRingQueueCreate(queue, &config);
+
+    double values[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
+    for (int i = 0; i < 6; ++i) {
+        if (acaRingQueueFull(queue)) {
+            queue = (double *)acaRingQueueEnqueue(queue, &values[i]);
+        } else {
+            acaRingQueueEnqueue(queue, &values[i]);
+        }
+    }
+    for (int i = 0; i < 6; ++i) {
+        size_t frontIndex = acaRingQueueDequeue(queue);
+        EXPECT_EQ(frontIndex, (size_t)(i));
+        EXPECT_EQ(queue[frontIndex], values[i]);
+    }
+
+    acaRingQueueFree(queue);
+}
+
+TEST(ring_queue, dynamic_enqueue_dequeue) {
+    int                    *queue  = nullptr;
+    aca_ring_queue_config_t config = {.capacity = 8, .fullBehavior = ACA_RING_QUEUE_RESIZE};
+    acaRingQueueCreate(queue, &config);
+
+    // enqueue-and-dequeue around half of the capacity, then enqueue more to
+    // trigger resize to test wrap-around logic in resizing
+    for (int i = 0; i < 4; ++i) {
+        EXPECT_NE(acaRingQueueFull(queue), true);
+        acaRingQueueEnqueue(queue, &i);
+        size_t frontIndex = acaRingQueueDequeue(queue);
+        EXPECT_EQ(acaRingQueueEmpty(queue), true);
+        EXPECT_EQ(frontIndex, (size_t)(i));
+        EXPECT_EQ(queue[frontIndex], i);
+    }
+
+    int values[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+    for (int i = 0; i < 10; ++i) {
+        if (acaRingQueueFull(queue)) {
+            queue = (int *)acaRingQueueEnqueue(queue, &values[i]);
+        } else {
+            acaRingQueueEnqueue(queue, &values[i]);
+        }
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        size_t frontIndex = acaRingQueueDequeue(queue);
+        EXPECT_EQ(frontIndex, (size_t)(i));
+        EXPECT_EQ(queue[frontIndex], values[i]);
+    }
+
+    acaRingQueueFree(queue);
+}

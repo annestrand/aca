@@ -445,7 +445,7 @@ The main config is how a Ring Queue will handle subsequent enqueue ops during a 
 1. `OVERWRITE`: this will cause queue to write-over each item (on enqueue) from the front
 2. `REJECT`: this will ignore any new enqueue op
 3. `ASSERT`: this will trigger an assert if user tries to enqueue on full
-4. `RESIZE`: this will cause queue to resize (double itself) (⚠️ NOT IMPLEMENTED YET ⚠️)
+4. `RESIZE`: this will cause queue to resize (double itself)
 
 ### Example Usage
 ```c
