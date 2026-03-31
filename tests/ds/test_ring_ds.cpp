@@ -49,7 +49,9 @@ TEST(ring_buffer, next) {
 TEST(ring_queue, fixed_capacity) {
     char                    buffer[ACA_RING_QUEUE_RESERVE(float, 8)];
     float                  *ringQueue = (float *)buffer;
-    aca_ring_queue_config_t config    = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(ringQueue, &config);
     EXPECT_NE(ringQueue, nullptr);
 
@@ -69,16 +71,20 @@ TEST(ring_queue, fixed_capacity) {
 }
 
 TEST(ring_queue, create_and_free) {
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 8, .fullBehavior = ACA_RING_QUEUE_REJECT};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 8;
+    config.fullBehavior = ACA_RING_QUEUE_REJECT;
     acaRingQueueCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
     acaRingQueueFree(queue);
 }
 
 TEST(ring_queue, size_and_capacity) {
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 8, .fullBehavior = ACA_RING_QUEUE_REJECT};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 8;
+    config.fullBehavior = ACA_RING_QUEUE_REJECT;
     acaRingQueueCreate(queue, &config);
 
     EXPECT_EQ(acaRingQueueSize(queue), 0);
@@ -88,8 +94,10 @@ TEST(ring_queue, size_and_capacity) {
 }
 
 TEST(ring_queue, empty_and_full) {
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     EXPECT_TRUE(acaRingQueueEmpty(queue));
@@ -107,8 +115,10 @@ TEST(ring_queue, empty_and_full) {
 }
 
 TEST(ring_queue, enqueue_and_front) {
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     for (int i = 0; i < 3; ++i) {
@@ -123,8 +133,10 @@ TEST(ring_queue, enqueue_and_front) {
 
 TEST(ring_queue, enqueue_and_dequeue) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     for (int i = 0; i < 6; ++i) {
@@ -148,8 +160,10 @@ TEST(ring_queue, enqueue_and_dequeue) {
 
 TEST(ring_queue, full_behavior_reject) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
-    char                   *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_REJECT};
+    char                   *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_REJECT;
     acaRingQueueCreate(queue, &config);
 
     char values[] = {'a', 'b', 'c', 'd', 'e', 'f'};
@@ -172,8 +186,10 @@ TEST(ring_queue, full_behavior_reject) {
 
 TEST(ring_queue, full_behavior_overwrite) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
-    float                  *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_OVERWRITE};
+    float                  *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     float values[] = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f};
@@ -198,8 +214,10 @@ TEST(ring_queue, full_behavior_overwrite) {
 
 TEST(ring_queue, full_behavior_assert) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
-    unsigned int           *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_ASSERT};
+    unsigned int           *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_ASSERT;
     acaRingQueueCreate(queue, &config);
 
     unsigned int values[] = {100, 200, 300, 400, 500};
@@ -227,8 +245,10 @@ TEST(ring_queue, full_behavior_assert) {
 }
 
 TEST(ring_queue, dynamic_resize) {
-    double                 *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 4, .fullBehavior = ACA_RING_QUEUE_RESIZE};
+    double                 *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 4;
+    config.fullBehavior = ACA_RING_QUEUE_RESIZE;
     acaRingQueueCreate(queue, &config);
 
     double values[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
@@ -249,8 +269,10 @@ TEST(ring_queue, dynamic_resize) {
 }
 
 TEST(ring_queue, dynamic_enqueue_dequeue) {
-    int                    *queue  = nullptr;
-    aca_ring_queue_config_t config = {.capacity = 8, .fullBehavior = ACA_RING_QUEUE_RESIZE};
+    int                    *queue = nullptr;
+    aca_ring_queue_config_t config;
+    config.capacity     = 8;
+    config.fullBehavior = ACA_RING_QUEUE_RESIZE;
     acaRingQueueCreate(queue, &config);
 
     // enqueue-and-dequeue around half of the capacity, then enqueue more to
