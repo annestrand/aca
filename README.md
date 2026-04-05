@@ -403,7 +403,7 @@ void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue
 void   acaRingQueueFree(void *queue);
 size_t acaRingQueueSize(void *queue);
 size_t acaRingQueueCapacity(void *queue);
-void   acaRingQueueEnqueue(void *queue, const void *elem);
+void  *acaRingQueueEnqueue(void *queue, const void *elem);
 size_t acaRingQueueDequeue(void *queue);
 size_t acaRingQueueFront(void *queue);
 int    acaRingQueueEmpty(void *queue);
