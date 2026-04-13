@@ -1,6 +1,6 @@
 # aca
 
-Single C header file libraries/utilities
+Single C header file libraries/utilities.
 
 ## Features
 - Dependency free (only libc)
