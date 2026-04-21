@@ -58,9 +58,11 @@ A simple argument parsing utility.
 - Comes with a pre-formatted print option routine
 
 ### Thread Safety
+
 One important note to keep in mind is that this utility is **NOT THREAD SAFE**.
 
-### Option Formatting
+### Design/API
+
 - Options can have either a short-name, long-name, or both
 - Options parsed from argv are expected to be prefixed with:
     - `-` for short-name options
@@ -133,6 +135,8 @@ A target-agnostic minimal GDB stub that interfaces using the GDB Remote Serial P
 - Implements the core GDB Remote Serial Protocol
 - Implemented as a single C header file
 - Cross platform (Windows, macOS, Linux)
+
+### Design/API
 
 The purpose of this utility is to abstract-away the GDB Remote Serial Protocol from the
 user and reduce the GDB "actions" into a set of simpler "stub" APIs for the user to
