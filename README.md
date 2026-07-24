@@ -184,7 +184,7 @@ void gdbserverCall(myCustomData *myCustomData) {
     gdbstubCtx.usrData = (void*)myCustomData;
 
     // Process cmds from GDB
-    minigdbstubProcess(&gdbstubCtx);
+    acaGdbstubProcess(&gdbstubCtx);
 
     return;
 }
