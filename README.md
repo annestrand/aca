@@ -68,7 +68,7 @@ One important note to keep in mind is that this utility is **NOT THREAD SAFE**.
     - `-` for short-name options
     - `--` for long-name options
 - Defined options are struct(s) that contain various info about that parsed option
-- Options with `hasValue` set to 1 are expected to have the following formatting:
+- Options with `hasValue` set to ACA_ARGPARSE_TRUE are expected to have the following formatting:
     - For short-name options, value must be next arg with whitespace in-bewteen (Example: `-n 45`)
     - For long-name options, `=<value>` should be appended to option (Example: `--number=45`)
 
@@ -80,10 +80,10 @@ One important note to keep in mind is that this utility is **NOT THREAD SAFE**.
 
 int main(int argc, char *argv[]) {
     // Define options: (option, "shortName", "longName", hasValue, "description")
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit.");
-    ACA_ARGPARSE_OPT(verbose, "", "verbose", 0, "Enable verbose mode.");
-    ACA_ARGPARSE_OPT(myValueOpt1, "", "myValueOpt1", 1, "Example value-option.");
-    ACA_ARGPARSE_OPT(myValueOpt2, "m", "", 1, "Another example value-option.");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit.");
+    ACA_ARGPARSE_OPT(verbose, "", "verbose", ACA_ARGPARSE_FALSE, "Enable verbose mode.");
+    ACA_ARGPARSE_OPT(myValueOpt1, "", "myValueOpt1", ACA_ARGPARSE_TRUE, "Example value-option.");
+    ACA_ARGPARSE_OPT(myValueOpt2, "m", "", ACA_ARGPARSE_TRUE, "Another example value-option.");
 
     // Parse
     int unknownOption = acaArgparseParse(argc, argv);

@@ -16,9 +16,9 @@ TEST(argparse, test_valid_options) {
     int argc = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -44,9 +44,9 @@ TEST(argparse, test_single_positional_arg) {
     int argc = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -73,17 +73,17 @@ TEST(argparse, test_positional_args) {
         (char *)"my_file5.txt",
     };
     int argc            = sizeof(argv) / sizeof(char *);
-    int posArgIndexes[] = {1, 3, 7, 8, 9};
+    int posArgIndexes[] = {ACA_ARGPARSE_TRUE, 3, 7, 8, 9};
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
     // Grab all the positional args
-    int posIndex = 0, i = 0;
+    int posIndex = ACA_ARGPARSE_FALSE, i = 0;
     do {
         posIndex = acaArgparseGetPositionalArg(argc, argv, posIndex);
         EXPECT_EQ(posIndex, posArgIndexes[i++]);

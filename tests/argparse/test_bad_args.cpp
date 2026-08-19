@@ -16,9 +16,9 @@ TEST(argparse, duplicate_options) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -35,9 +35,9 @@ TEST(argparse, value_option_at_end_no_value) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -60,9 +60,9 @@ TEST(argparse, unknown_option) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
 
     EXPECT_NE(unknownOpt, 0);
@@ -82,10 +82,10 @@ TEST(argparse, option_value_is_other_option) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
-    ACA_ARGPARSE_OPT(data2, "", "data2", 1, "Test data2-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
+    ACA_ARGPARSE_OPT(data2, "", "data2", ACA_ARGPARSE_TRUE, "Test data2-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -109,10 +109,10 @@ TEST(argparse, option_value_malformed_long_format) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
-    ACA_ARGPARSE_OPT(data2, "", "data2", 1, "Test data2-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
+    ACA_ARGPARSE_OPT(data2, "", "data2", ACA_ARGPARSE_TRUE, "Test data2-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 
@@ -136,10 +136,10 @@ TEST(argparse, longname_non_value_option_has_value) {
     int   argc   = sizeof(argv) / sizeof(char *);
 
     // Add and parse opts
-    ACA_ARGPARSE_OPT(help, "h", "help", 0, "Print out help and exit");
-    ACA_ARGPARSE_OPT(verbose, "v", "verbose", 0, "Add verbosity");
-    ACA_ARGPARSE_OPT(data, "d", "data", 1, "Test data-value option");
-    ACA_ARGPARSE_OPT(data2, "", "data2", 0, "Test data2-value option");
+    ACA_ARGPARSE_OPT(help, "h", "help", ACA_ARGPARSE_FALSE, "Print out help and exit");
+    ACA_ARGPARSE_OPT(verbose, "v", "verbose", ACA_ARGPARSE_FALSE, "Add verbosity");
+    ACA_ARGPARSE_OPT(data, "d", "data", ACA_ARGPARSE_TRUE, "Test data-value option");
+    ACA_ARGPARSE_OPT(data2, "", "data2", ACA_ARGPARSE_FALSE, "Test data2-value option");
     int unknownOpt = acaArgparseParse(argc, argv);
     EXPECT_EQ(unknownOpt, 0);
 

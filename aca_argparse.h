@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+enum aca_argparse_bool { ACA_ARGPARSE_FALSE = 0, ACA_ARGPARSE_TRUE };
+
 typedef struct aca_argparse_info_bits {
     unsigned int hasValue : 1;
     unsigned int hasErr : 1;
