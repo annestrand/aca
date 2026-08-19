@@ -13,9 +13,6 @@
 #define ACA_LOG_COLOR_WHITE "\033[0;37m"
 #define ACA_LOG_COLOR_RESET "\033[0m"
 
-#define ACA_LOG_HANDLER(name)                                                                      \
-    void name(aca_log_level level, const char *file, int line, const char *fmt, va_list args)
-
 typedef enum aca_log_level {
     ACA_LOG_TRACE = 0,
     ACA_LOG_DEBUG,
@@ -25,18 +22,26 @@ typedef enum aca_log_level {
     ACA_LOG_FATAL
 } aca_log_level;
 
-typedef void(aca_log_handler)(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+typedef struct aca_log_handler_args {
+    const char   *fmt;
+    const char   *file;
+    va_list       args;
+    aca_log_level level;
+    int           line;
+    double        timestamp;
+} aca_log_handler_args;
+
+typedef void(aca_log_handler)(aca_log_handler_args args);
 
 void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
 void             acaLogSetHandler(aca_log_handler *handler);
 aca_log_handler *acaLogGetHandler(void);
 
 // provided log handlers
-ACA_LOG_HANDLER(acaLogStandardHandler);
-ACA_LOG_HANDLER(acaLogBasicHandler);
-ACA_LOG_HANDLER(acaLogNullHandler);
-ACA_LOG_HANDLER(acaLogStandardFileHandler);
+void acaLogStandardHandler(aca_log_handler_args args);
+void acaLogBasicHandler(aca_log_handler_args args);
+void acaLogNullHandler(aca_log_handler_args args);
+void acaLogStandardFileHandler(aca_log_handler_args args);
 
 // wrapper-macro helpers
 #if !defined(ACA_LOG_STRIP_LOGGING_MACROS)
@@ -170,7 +175,14 @@ void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ..
     va_list args;
     va_start(args, fmt);
     assert(tl_acaLogHandler != NULL && "no log handler set for acaLog!");
-    tl_acaLogHandler(level, file, line, fmt, args);
+    aca_log_handler_args handlerArgs = {};
+    handlerArgs.fmt                  = fmt;
+    handlerArgs.file                 = file;
+    handlerArgs.level                = level;
+    handlerArgs.line                 = line;
+    handlerArgs.timestamp            = GetTimestamp();
+    va_copy(handlerArgs.args, args);
+    tl_acaLogHandler(handlerArgs);
     va_end(args);
 }
 
@@ -184,20 +196,19 @@ aca_log_handler *acaLogGetHandler(void) {
     return tl_acaLogHandler;
 }
 
-static inline void acaLogStandardHandlerImpl(
-    FILE *fp, aca_log_level level, const char *file, int line, const char *fmt, va_list args) {
+static inline void acaLogStandardHandlerImpl(FILE *fp, aca_log_handler_args args) {
 #if defined(ACA_LOG_TAG)
     fprintf(fp, "[" ACA_LOG_TAG "] ");
 #endif // ACA_LOG_TAG
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP)
-    fprintf(fp, "[%10.4f] ", GetTimestamp());
+    fprintf(fp, "[%10.4f] ", args.timestamp);
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL)
     const char *levelStr;
-    ACA_LOG_SET_LEVEL(level, levelStr);
+    ACA_LOG_SET_LEVEL(args.level, levelStr);
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
     if (fp == stdout) { // only allow color escape codes for terminal output
-        fprintf(fp, "[%s%5s%s] ", gAcaLogLevelColorMap[level], levelStr, ACA_LOG_COLOR_RESET);
+        fprintf(fp, "[%s%5s%s] ", gAcaLogLevelColorMap[args.level], levelStr, ACA_LOG_COLOR_RESET);
     } else {
         fprintf(fp, "[%5s] ", levelStr);
     }
@@ -206,37 +217,36 @@ static inline void acaLogStandardHandlerImpl(
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE)
-    fprintf(fp, "[%28s] ", FormatFileLine(file, line));
+    fprintf(fp, "[%28s] ", FormatFileLine(args.file, args.line));
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE
-
-    vfprintf(fp, fmt, args);
+    vfprintf(fp, args.fmt, args.args);
     fprintf(fp, "\n");
 }
 
 // a more classic and configurable logging - log_tag, timestamp, level, file, line, fmt...
-ACA_LOG_HANDLER(acaLogStandardHandler) {
-    return acaLogStandardHandlerImpl(stdout, level, file, line, fmt, args);
+void acaLogStandardHandler(aca_log_handler_args args) {
+    return acaLogStandardHandlerImpl(stdout, args);
 }
 
 // barebones logging - level fmt...
-ACA_LOG_HANDLER(acaLogBasicHandler) {
+void acaLogBasicHandler(aca_log_handler_args args) {
     const char *levelStr;
-    ACA_LOG_SET_LEVEL(level, levelStr);
+    ACA_LOG_SET_LEVEL(args.level, levelStr);
     fprintf(stdout, "[%5s] ", levelStr);
-    vfprintf(stdout, fmt, args);
+    vfprintf(stdout, args.fmt, args.args);
     fprintf(stdout, "\n");
 }
 
 // this handler just disables/eats the logging
-ACA_LOG_HANDLER(acaLogNullHandler) {
+void acaLogNullHandler(aca_log_handler_args args) {
     return;
 }
 
 // same as standard handler but routes to a file vs. stdout
-ACA_LOG_HANDLER(acaLogStandardFileHandler) {
+void acaLogStandardFileHandler(aca_log_handler_args args) {
     FILE       *fp             = NULL;
-    const char *dumpFile       = "dump.log";
-    const char *dumpFileAccess = "w";
+    const char *dumpFile       = "aca_log_dump.log";
+    const char *dumpFileAccess = "a";
 
 #if defined(ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME)
     dumpFile = ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME;
@@ -261,7 +271,7 @@ ACA_LOG_HANDLER(acaLogStandardFileHandler) {
     }
 #endif
 
-    acaLogStandardHandlerImpl(fp, level, file, line, fmt, args);
+    acaLogStandardHandlerImpl(fp, args);
     fclose(fp);
 }
 

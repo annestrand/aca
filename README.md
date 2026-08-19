@@ -251,7 +251,7 @@ void             acaLogSetHandler(aca_log_handler *handler);
 aca_log_handler *acaLogGetHandler(void);
 ```
 
-Below are the helper-macros for `acaLog` (user should opt to just use these):
+Below are the helper-macros for `acaLog`:
 ```c
 #define ACA_LOG_INFO(fmt, ...)  acaLog(ACA_LOG_INFO,  __FILE__, __LINE__, fmt, __VA_ARGS__);
 #define ACA_LOG_WARN(fmt, ...)  acaLog(ACA_LOG_WARN,  __FILE__, __LINE__, fmt, __VA_ARGS__);
@@ -261,36 +261,33 @@ Below are the helper-macros for `acaLog` (user should opt to just use these):
 #define ACA_LOG_TRACE(fmt, ...) acaLog(ACA_LOG_TRACE, __FILE__, __LINE__, fmt, __VA_ARGS__);
 ```
 
-Below is the signature of a "handler" routine - users can define their own handler(s) by adopting this signature:
+Below is the signature of a "handler" routine
+(Users can define their own handler(s) by adopting this signature):
 ```c
-typedef void(aca_log_handler)(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+typedef void(aca_log_handler)(aca_log_handler_args args);
+```
 
-// example handlers:
-// prints [timestamp] [level] [file:line] msg (to stdout)
-void acaLogStandardHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-// prints [timestamp] [level] [file:line] msg (to file)
-void acaLogStandardFileHandler(
-    aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-// prints [level] msg (to stdout)
-void acaLogBasicHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
-// disables/eats the logs
-void acaLogNullHandler(aca_log_level level, const char *file, int line, const char *fmt, va_list args);
+Below are some out-of-the-box handlers that can be used:
+```c
+void acaLogStandardHandler(aca_log_handler_args args);     // [tag] [timestamp] [level] [file:line] fmtStr (to stdout)
+void acaLogStandardFileHandler(aca_log_handler_args args); // [tag] [timestamp] [level] [file:line] fmtStr (to file)
+void acaLogBasicHandler(aca_log_handler_args args);        // [level] fmtStr (to stdout)
+void acaLogNullHandler(aca_log_handler_args args);         // disables/eats the logs
 ```
 
 ### Configs
 
-There are a few config macros for user control. These need to be defined when defining the implementation source:
+There are a few config macros for user control. These need to be defined **before** defining the implementation source:
 ```c
-#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL // disable log level in standard handler
-#define ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE // disable file and line in standard handler
-#define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP // disable timestamp in standard handler
-#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS // disable log level colors in standard handler
-#define ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME "/tmp/dump.log" // filename/path to standard file handler (default: dump.log)
-#define ACA_LOG_TO_STANDARD_FILE_HANDLER_ACCESS_STR "a" // access mode to standard file handler (default: w)
-#define ACA_LOG_STRIP_LOGGING_MACROS // strips-away any ACA_LOG_[LEVEL] macro usages
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL // disable [level] in standard handler(s)
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE // disable [file:line] in standard handler(s)
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP // disable [timestamp] in standard handler(s)
+#define ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS // disable log level colors in standard handler(s)
+#define ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME "/tmp/dump.log" // filepath to standard-file handler (default: aca_log_dump.log)
+#define ACA_LOG_TO_STANDARD_FILE_HANDLER_ACCESS_STR "w" // access mode to standard-file handler (default: a)
+#define ACA_LOG_STRIP_LOGGING_MACROS // strips-away any ACA_LOG_[LEVEL] logging macros
 #define ACA_LOG_CHOP_FILEPATH // chops the full prefix-path from __FILE__
-#define ACA_LOG_TAG "MyProject" // adds project tag to prefix
+#define ACA_LOG_TAG "MyProject" // adds project [tag] to prefix
 
 #define ACA_LOG_IMPLEMENTATION
 #include "aca_log.h"
@@ -319,11 +316,12 @@ void usleep(__int64 usec) {
 #endif
 
 // user custom handler routes logging to stdout and dump.log
-ACA_LOG_HANDLER(customLogHandler) {
+void customLogHandler(aca_log_handler_args args) {
     va_list argsCopy;
-    va_copy(argsCopy, args);
-    acaLogStandardHandler(level, file, line, fmt, args);
-    acaLogStandardFileHandler(level, file, line, fmt, argsCopy);
+    va_copy(argsCopy, args.args);
+    acaLogStandardHandler(args);
+    va_copy(args.args, argsCopy);
+    acaLogStandardFileHandler(args);
     va_end(argsCopy);
 }
 
@@ -350,14 +348,14 @@ int main(void) {
 ```
 ```
 $ cc main.c && ./a.out
-[    0.0000] [ INFO] [                   test.c:31] Hello World!
-[    0.2181] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
-[    0.3207] [DEBUG] [                   test.c:44] Done...
-
-$ cat dump.log
-[    0.0002] [ INFO] [                   test.c:31] Hello World!
-[    0.2182] [ WARN] [                   test.c:33] Value1: 555, Value2: 24.560000...
-[    0.3208] [DEBUG] [                   test.c:44] Done...
+[    0.0000] [ INFO] [                   main.c:32] Hello World!
+[    0.2305] [ WARN] [                   main.c:34] Value1: 555, Value2: 24.560000...
+[    0.3466] [DEBUG] [                   main.c:45] Done...
+ 
+$ cat dump.log 
+[    0.0000] [ INFO] [                   main.c:32] Hello World!
+[    0.2305] [ WARN] [                   main.c:34] Value1: 555, Value2: 24.560000...
+[    0.3466] [DEBUG] [                   main.c:45] Done...
 ```
 ---
 
