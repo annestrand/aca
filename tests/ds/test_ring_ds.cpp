@@ -50,8 +50,9 @@ TEST(ring_queue, fixed_capacity) {
     char                    buffer[ACA_RING_QUEUE_RESERVE(float, 8)];
     float                  *ringQueue = (float *)buffer;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = false;
     acaRingQueueCreate(ringQueue, &config);
     EXPECT_NE(ringQueue, nullptr);
 
@@ -248,16 +249,15 @@ TEST(ring_queue, dynamic_resize) {
     double                 *queue = nullptr;
     aca_ring_queue_config_t config;
     config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_RESIZE;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     double values[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
     for (int i = 0; i < 6; ++i) {
         if (acaRingQueueFull(queue)) {
-            queue = (double *)acaRingQueueEnqueue(queue, &values[i]);
-        } else {
-            acaRingQueueEnqueue(queue, &values[i]);
+            queue = (double *)acaRingQueueResize(queue, acaRingQueueCapacity(queue) * 2);
         }
+        acaRingQueueEnqueue(queue, &values[i]);
     }
     for (int i = 0; i < 6; ++i) {
         size_t frontIndex = acaRingQueueDequeue(queue);
@@ -272,7 +272,7 @@ TEST(ring_queue, dynamic_enqueue_dequeue) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
     config.capacity     = 8;
-    config.fullBehavior = ACA_RING_QUEUE_RESIZE;
+    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
     acaRingQueueCreate(queue, &config);
 
     // enqueue-and-dequeue around half of the capacity, then enqueue more to
@@ -289,10 +289,9 @@ TEST(ring_queue, dynamic_enqueue_dequeue) {
     int values[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     for (int i = 0; i < 10; ++i) {
         if (acaRingQueueFull(queue)) {
-            queue = (int *)acaRingQueueEnqueue(queue, &values[i]);
-        } else {
-            acaRingQueueEnqueue(queue, &values[i]);
+            queue = (int *)acaRingQueueResize(queue, acaRingQueueCapacity(queue) * 2);
         }
+        acaRingQueueEnqueue(queue, &values[i]);
     }
 
     for (int i = 0; i < 10; ++i) {

@@ -36,21 +36,18 @@ static T *acaRingBufferCreateCpp(T *buffer, size_t elemSize, size_t capacity) {
 #endif // __cplusplus
 
 typedef enum aca_ring_queue_ds_type {
-    ACA_RING_QUEUE_FIXED_OVERWRITE_DS,
-    ACA_RING_QUEUE_FIXED_OVERWRITE_POW2_DS,
-    ACA_RING_QUEUE_FIXED_REJECT_DS,
-    ACA_RING_QUEUE_FIXED_REJECT_POW2_DS,
-    ACA_RING_QUEUE_FIXED_ASSERT_DS,
-    ACA_RING_QUEUE_FIXED_ASSERT_POW2_DS,
-    ACA_RING_QUEUE_DYNAMIC_DS,
-    ACA_RING_QUEUE_DYNAMIC_POW2_DS,
+    ACA_RING_QUEUE_OVERWRITE_DS,
+    ACA_RING_QUEUE_OVERWRITE_POW2_DS,
+    ACA_RING_QUEUE_REJECT_DS,
+    ACA_RING_QUEUE_REJECT_POW2_DS,
+    ACA_RING_QUEUE_ASSERT_DS,
+    ACA_RING_QUEUE_ASSERT_POW2_DS,
 } aca_ring_queue_ds_type_t;
 
 typedef enum aca_ring_queue_ds_full_behavior {
     ACA_RING_QUEUE_OVERWRITE,
     ACA_RING_QUEUE_REJECT,
     ACA_RING_QUEUE_ASSERT,
-    ACA_RING_QUEUE_RESIZE,
 } aca_ring_queue_ds_full_behavior_t;
 
 typedef struct aca_ring_queue_ds_header {
@@ -59,6 +56,7 @@ typedef struct aca_ring_queue_ds_header {
     size_t                   head;
     size_t                   tail;
     aca_ring_queue_ds_type_t type;
+    int                      isHeapAlloced;
 } aca_ring_queue_ds_header_t;
 
 #define ACA_RING_QUEUE_RESERVE(elemSize, count)                                                    \
@@ -67,6 +65,7 @@ typedef struct aca_ring_queue_ds_header {
 
 typedef struct aca_ring_queue_ds_config {
     size_t                            capacity;
+    int                               isHeapAlloced;
     aca_ring_queue_ds_full_behavior_t fullBehavior;
 } aca_ring_queue_config_t;
 
@@ -75,11 +74,12 @@ void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue
 void   acaRingQueueFree(void *queue);
 size_t acaRingQueueSize(void *queue);
 size_t acaRingQueueCapacity(void *queue);
-void  *acaRingQueueEnqueue(void *queue, const void *elem);
+int    acaRingQueueEnqueue(void *queue, const void *elem);
 size_t acaRingQueueDequeue(void *queue);
 size_t acaRingQueueFront(void *queue);
 int    acaRingQueueEmpty(void *queue);
 int    acaRingQueueFull(void *queue);
+void  *acaRingQueueResize(void *oldQueue, size_t newSize);
 #ifdef __cplusplus
 template <typename T>
 static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
@@ -110,10 +110,9 @@ static inline aca_ring_queue_ds_header_t *GetRingQueueHeader(void *queue) {
 
 static inline size_t FindNextRingQueueIndex(aca_ring_queue_ds_header_t *header, size_t index) {
     switch (header->type) {
-        case ACA_RING_QUEUE_DYNAMIC_POW2_DS:
-        case ACA_RING_QUEUE_FIXED_ASSERT_POW2_DS:
-        case ACA_RING_QUEUE_FIXED_REJECT_POW2_DS:
-        case ACA_RING_QUEUE_FIXED_OVERWRITE_POW2_DS:
+        case ACA_RING_QUEUE_ASSERT_POW2_DS:
+        case ACA_RING_QUEUE_REJECT_POW2_DS:
+        case ACA_RING_QUEUE_OVERWRITE_POW2_DS:
             index = (index + 1) & (header->capacity - 1);
             break;
         default:
@@ -126,14 +125,11 @@ static inline size_t FindNextRingQueueIndex(aca_ring_queue_ds_header_t *header, 
 static inline aca_ring_queue_ds_header_t *ReallocRingQueue(void *queue, size_t newCapacity) {
     aca_ring_queue_ds_header_t *oldHeader   = GetRingQueueHeader(queue);
     size_t                      currentSize = acaRingQueueSize(queue);
-    if (newCapacity < currentSize) {
+    if (newCapacity < currentSize || !oldHeader->isHeapAlloced) {
         return NULL;
     }
 
     size_t newSize = (oldHeader->elemSize * newCapacity) + sizeof(aca_ring_queue_ds_header_t);
-    assert(oldHeader->type == ACA_RING_QUEUE_DYNAMIC_DS ||
-           oldHeader->type == ACA_RING_QUEUE_DYNAMIC_POW2_DS);
-
     aca_ring_queue_ds_header_t *newHeader = (aca_ring_queue_ds_header_t *)malloc(newSize);
     if (newHeader == NULL) {
         assert(0 && "failed to allocate memory for ring queue!"); // rare, so scream if it happens
@@ -241,8 +237,10 @@ void *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_
         if (header == NULL) {
             return NULL;
         }
+        header->isHeapAlloced = 1;
     } else {
-        header = (aca_ring_queue_ds_header_t *)queue;
+        header                = (aca_ring_queue_ds_header_t *)queue;
+        header->isHeapAlloced = config->isHeapAlloced;
     }
     header->capacity = config->capacity;
     header->elemSize = elemSize;
@@ -253,16 +251,13 @@ void *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_
     if (isCapacityPow2) {
         switch (config->fullBehavior) {
             case ACA_RING_QUEUE_OVERWRITE:
-                header->type = ACA_RING_QUEUE_FIXED_OVERWRITE_POW2_DS;
+                header->type = ACA_RING_QUEUE_OVERWRITE_POW2_DS;
                 break;
             case ACA_RING_QUEUE_REJECT:
-                header->type = ACA_RING_QUEUE_FIXED_REJECT_POW2_DS;
+                header->type = ACA_RING_QUEUE_REJECT_POW2_DS;
                 break;
             case ACA_RING_QUEUE_ASSERT:
-                header->type = ACA_RING_QUEUE_FIXED_ASSERT_POW2_DS;
-                break;
-            case ACA_RING_QUEUE_RESIZE:
-                header->type = ACA_RING_QUEUE_DYNAMIC_POW2_DS;
+                header->type = ACA_RING_QUEUE_ASSERT_POW2_DS;
                 break;
             default:
                 assert(0 && "unknown full behavior!");
@@ -271,16 +266,13 @@ void *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_
     } else {
         switch (config->fullBehavior) {
             case ACA_RING_QUEUE_OVERWRITE:
-                header->type = ACA_RING_QUEUE_FIXED_OVERWRITE_DS;
+                header->type = ACA_RING_QUEUE_OVERWRITE_DS;
                 break;
             case ACA_RING_QUEUE_REJECT:
-                header->type = ACA_RING_QUEUE_FIXED_REJECT_DS;
+                header->type = ACA_RING_QUEUE_REJECT_DS;
                 break;
             case ACA_RING_QUEUE_ASSERT:
-                header->type = ACA_RING_QUEUE_FIXED_ASSERT_DS;
-                break;
-            case ACA_RING_QUEUE_RESIZE:
-                header->type = ACA_RING_QUEUE_DYNAMIC_DS;
+                header->type = ACA_RING_QUEUE_ASSERT_DS;
                 break;
             default:
                 assert(0 && "unknown full behavior!");
@@ -317,40 +309,30 @@ size_t acaRingQueueCapacity(void *queue) {
     return GetRingQueueHeader(queue)->capacity;
 }
 
-void *acaRingQueueEnqueue(void *queue, const void *elem) {
+int acaRingQueueEnqueue(void *queue, const void *elem) {
     if (queue == NULL || elem == NULL) {
-        return NULL;
+        return 0;
     }
     aca_ring_queue_ds_header_t *header = GetRingQueueHeader(queue);
     if (acaRingQueueFull(queue)) {
         switch (header->type) {
-            case ACA_RING_QUEUE_FIXED_OVERWRITE_DS:
-            case ACA_RING_QUEUE_FIXED_OVERWRITE_POW2_DS:
+            case ACA_RING_QUEUE_OVERWRITE_DS:
+            case ACA_RING_QUEUE_OVERWRITE_POW2_DS:
                 // overwrite the oldest element
                 header->head = FindNextRingQueueIndex(header, header->head);
                 break;
-            case ACA_RING_QUEUE_FIXED_REJECT_DS:
-            case ACA_RING_QUEUE_FIXED_REJECT_POW2_DS:
+            case ACA_RING_QUEUE_REJECT_DS:
+            case ACA_RING_QUEUE_REJECT_POW2_DS:
                 // reject new element, do nothing
-                return NULL;
-            case ACA_RING_QUEUE_FIXED_ASSERT_DS:
-            case ACA_RING_QUEUE_FIXED_ASSERT_POW2_DS:
+                return 0;
+            case ACA_RING_QUEUE_ASSERT_DS:
+            case ACA_RING_QUEUE_ASSERT_POW2_DS:
                 // assert failure
                 assert(0 && "ring queue is full!");
-                return NULL;
-            case ACA_RING_QUEUE_DYNAMIC_DS:
-            case ACA_RING_QUEUE_DYNAMIC_POW2_DS: {
-                aca_ring_queue_ds_header_t *newHeader =
-                    ReallocRingQueue(queue, header->capacity * 2);
-                if (newHeader == NULL) {
-                    return NULL; // realloc failed, keep old queue unchanged (fallback)
-                }
-                header = newHeader;
-                break;
-            }
+                return 0; // non-debug builds this falls back to "reject" behavior
             default:
                 assert(0 && "unreachable");
-                return NULL;
+                return 0;
         }
     }
 
@@ -359,7 +341,7 @@ void *acaRingQueueEnqueue(void *queue, const void *elem) {
     memcpy(dataPtr + offset, elem, header->elemSize);
 
     header->tail = FindNextRingQueueIndex(header, header->tail);
-    return (void *)(dataPtr);
+    return 1; // success
 }
 
 size_t acaRingQueueDequeue(void *queue) {
@@ -399,6 +381,19 @@ int acaRingQueueFull(void *queue) {
     }
     aca_ring_queue_ds_header_t *header = GetRingQueueHeader(queue);
     return FindNextRingQueueIndex(header, header->tail) == header->head;
+}
+
+void *acaRingQueueResize(void *oldQueue, size_t newCapacity) {
+    if (oldQueue == NULL) {
+        return nullptr;
+    }
+    aca_ring_queue_ds_header_t *header    = GetRingQueueHeader(oldQueue);
+    aca_ring_queue_ds_header_t *newHeader = ReallocRingQueue(oldQueue, newCapacity);
+    if (newHeader == NULL) {
+        return nullptr;
+    }
+    header = newHeader;
+    return (header + 1); // return pointer to data, not header
 }
 
 #endif // ACA_RING_DS_IMPLEMENTATION

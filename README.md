@@ -380,7 +380,6 @@ Thus, it is important to note a few things:
 
 - Do **NOT** attempt to mutate the base DS pointer itself
 - User is responsible to understand the DS pointer *hides* the underlying header/type
-- Base DS pointer *can* reallocate, always use returned base DS pointer in those cases (if routine returns ptr)
 - If heap allocated, do **NOT** call free() on base DS pointer (use library-provided free routine instead)
 
 Below are the API structures for both the ring buffer and ring queue: 
@@ -405,19 +404,24 @@ void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue
 void   acaRingQueueFree(void *queue);
 size_t acaRingQueueSize(void *queue);
 size_t acaRingQueueCapacity(void *queue);
-void  *acaRingQueueEnqueue(void *queue, const void *elem);
+int    acaRingQueueEnqueue(void *queue, const void *elem);
 size_t acaRingQueueDequeue(void *queue);
 size_t acaRingQueueFront(void *queue);
 int    acaRingQueueEmpty(void *queue);
 int    acaRingQueueFull(void *queue);
+void  *acaRingQueueResize(void *oldQueue, size_t newSize);
 // create macro internally expands to either a C++ wrapper or direct C call
 #define acaRingQueueCreate(T, config)
 ```
 The ring queue is just an extension of the ring buffer. Introduces head and tail internal iterators
 to provide FIFO mechanics. Size will provide items enqueued - capacity gives the whole structure size.
 
+If user provides NULL for queue create, an internal heap-allocated queue is provided.
+
 Currently the ring queue is implemented as **"waste-one-slot"**. This means that the queue's true
 capacity will be `(capacity-1)`.
+
+**NOTE:** Queue resize operation is only available if queue was heap allocated.
 
 ### Config/Helpers
 ```c
@@ -432,22 +436,26 @@ typedef enum aca_ring_queue_ds_full_behavior {
     ACA_RING_QUEUE_OVERWRITE,
     ACA_RING_QUEUE_REJECT,
     ACA_RING_QUEUE_ASSERT,
-    ACA_RING_QUEUE_RESIZE,
 } aca_ring_queue_ds_full_behavior_t;
 
 typedef struct aca_ring_queue_ds_config {
     size_t                            capacity;
+    int                               isHeapAlloced;
     aca_ring_queue_ds_full_behavior_t fullBehavior;
 } aca_ring_queue_config_t;
 ```
 For a Ring Queue, user will pass a config struct during queue create.
 
+If user is providing an existing allocation for queue storage, they need to specify
+if the queue is heap allocated (determines resize eligibility).
+
 The main config is how a Ring Queue will handle subsequent enqueue ops during a `full-event`:
 
 1. `OVERWRITE`: this will cause queue to write-over each item (on enqueue) from the front
 2. `REJECT`: this will ignore any new enqueue op
-3. `ASSERT`: this will trigger an assert if user tries to enqueue on full
-4. `RESIZE`: this will cause queue to resize (double itself)
+3. `ASSERT`: this will trigger an assert if user tries to enqueue on full (non-debug builds fall back to REJECT)
+
+Enqueue will return 1 on either success or OVERWRITE, and return 0 for REJECT/ASSERT or any other error case.
 
 ### Example Usage
 ```c
