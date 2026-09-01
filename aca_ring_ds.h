@@ -132,9 +132,6 @@ static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_
 #define acaRingQueueCreate(T, config) (T) = (acaRingQueueCreateImpl((T), (sizeof(*(T))), (config)))
 #endif // __cplusplus
 
-// acaRingQueueLf API
-// lock-free, single producer / single consumer, power-of-two capacity only,
-// rejects new elements when full
 typedef struct aca_ring_queue_lf_ds_header {
     size_t capacity;
     size_t elemSize;
@@ -146,8 +143,9 @@ typedef struct aca_ring_queue_lf_ds_header {
     ((count) * (elemSize) + sizeof(aca_ring_queue_lf_ds_header_t))
 #define ACA_RING_QUEUE_LF_RESERVE_FOR(T, count) ACA_RING_QUEUE_LF_RESERVE(sizeof(T), (count))
 
-void  *acaRingQueueLfCreateImpl(void *queue, size_t elemSize, size_t capacity);
-void   acaRingQueueLfFree(void *queue);
+// acaRingQueueLf API (lock-free, single producer / single consumer)
+void *acaRingQueueLfCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
+void  acaRingQueueLfFree(void *queue);
 size_t acaRingQueueLfSize(void *queue);
 size_t acaRingQueueLfCapacity(void *queue);
 void  *acaRingQueueLfEnqueue(void *queue, const void *elem);
@@ -157,12 +155,15 @@ int    acaRingQueueLfEmpty(void *queue);
 int    acaRingQueueLfFull(void *queue);
 #ifdef __cplusplus
 template <typename T>
-static T *acaRingQueueLfCreateCpp(T *queue, size_t elemSize, size_t capacity) {
-    return (T *)acaRingQueueLfCreateImpl(queue, elemSize, capacity);
+static T *
+acaRingQueueLfCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
+    return (T *)acaRingQueueLfCreateImpl(queue, elemSize, config);
 }
-#define acaRingQueueLfCreate(T, size) ((T) = acaRingQueueLfCreateCpp((T), (sizeof(*(T))), (size)))
+#define acaRingQueueLfCreate(T, config)                                                            \
+    ((T) = acaRingQueueLfCreateCpp((T), (sizeof(*(T))), (config)))
 #else
-#define acaRingQueueLfCreate(T, size) (T) = (acaRingQueueLfCreateImpl((T), (sizeof(*(T))), (size)))
+#define acaRingQueueLfCreate(T, config)                                                            \
+    (T) = (acaRingQueueLfCreateImpl((T), (sizeof(*(T))), (config)))
 #endif // __cplusplus
 
 #ifdef ACA_RING_DS_IMPLEMENTATION
@@ -460,12 +461,12 @@ int acaRingQueueFull(void *queue) {
 
 void *acaRingQueueResize(void *oldQueue, size_t newCapacity) {
     if (oldQueue == NULL) {
-        return nullptr;
+        return NULL;
     }
     aca_ring_queue_ds_header_t *header    = GetRingQueueHeader(oldQueue);
     aca_ring_queue_ds_header_t *newHeader = ReallocRingQueue(oldQueue, newCapacity);
     if (newHeader == NULL) {
-        return nullptr;
+        return NULL;
     }
     header = newHeader;
     return (header + 1); // return pointer to data, not header
@@ -477,7 +478,7 @@ static inline aca_ring_buffer_lf_ds_header_t *GetRingBufferLfHeader(void *buffer
 }
 
 void *acaRingBufferLfCreateImpl(void *buffer, size_t elemSize, size_t capacity) {
-    if (elemSize == 0 || !IsPow2(capacity)) {
+    if (elemSize == 0 || capacity == 0) {
         return NULL;
     }
     aca_ring_buffer_lf_ds_header_t *header;
@@ -528,26 +529,26 @@ void acaRingBufferLfNext(void *buffer) {
 }
 
 // acaRingQueueLf implementation
-
 static inline aca_ring_queue_lf_ds_header_t *GetRingQueueLfHeader(void *queue) {
     return ((aca_ring_queue_lf_ds_header_t *)queue) - 1;
 }
 
-void *acaRingQueueLfCreateImpl(void *queue, size_t elemSize, size_t capacity) {
-    if (elemSize == 0 || !IsPow2(capacity)) {
+void *
+acaRingQueueLfCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
+    if (config == NULL || elemSize == 0 || config->capacity == 0) {
         return NULL;
     }
     aca_ring_queue_lf_ds_header_t *header;
     if (queue == NULL) {
-        header =
-            (aca_ring_queue_lf_ds_header_t *)malloc(ACA_RING_QUEUE_LF_RESERVE(elemSize, capacity));
+        header = (aca_ring_queue_lf_ds_header_t *)malloc(
+            ACA_RING_QUEUE_LF_RESERVE(elemSize, config->capacity));
         if (header == NULL) {
             return NULL;
         }
     } else {
         header = (aca_ring_queue_lf_ds_header_t *)queue;
     }
-    header->capacity = capacity;
+    header->capacity = config->capacity;
     header->elemSize = elemSize;
     ACA_RING_ATOMIC_STORE(&header->head, 0, memory_order_relaxed);
     ACA_RING_ATOMIC_STORE(&header->tail, 0, memory_order_relaxed);
