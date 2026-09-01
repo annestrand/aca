@@ -318,7 +318,7 @@ TEST(ring_queue, dynamic_enqueue_dequeue) {
 // ring_buffer_lf
 
 TEST(ring_buffer_lf, fixed_capacity) {
-    char buffer[ACA_RING_BUFFER_SCPC_RESERVE(int, 8)];
+    char buffer[ACA_RING_BUFFER_SPSC_RESERVE(int, 8)];
     int *ringBuffer = (int *)buffer;
     acaRingBufferSpscCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
@@ -438,7 +438,7 @@ TEST(ring_queue_lf, fixed_capacity) {
 TEST(ring_queue_lf, null_handling) {
     EXPECT_EQ(acaRingQueueSpscSize(nullptr), 0);
     EXPECT_EQ(acaRingQueueSpscCapacity(nullptr), 0);
-    EXPECT_EQ(acaRingQueueSpscEnqueue(nullptr, nullptr), nullptr);
+    EXPECT_EQ(acaRingQueueSpscEnqueue(nullptr, nullptr), 0);
     EXPECT_EQ(acaRingQueueSpscDequeue(nullptr), 0);
     EXPECT_EQ(acaRingQueueSpscFront(nullptr), 0);
     EXPECT_TRUE(acaRingQueueSpscEmpty(nullptr));
@@ -459,7 +459,7 @@ TEST(ring_queue_lf, size_and_capacity) {
 
     int values[] = {1, 2, 3};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), 0);
     }
     EXPECT_EQ(acaRingQueueSpscSize(queue), 3);
 
@@ -479,7 +479,7 @@ TEST(ring_queue_lf, empty_and_full) {
 
     int values[] = {1, 2, 3};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), 0);
     }
 
     EXPECT_FALSE(acaRingQueueSpscEmpty(queue));
@@ -499,12 +499,12 @@ TEST(ring_queue_lf, reject_when_full) {
 
     int values[] = {1, 2, 3, 4, 5, 6};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), 0);
     }
 
     // queue is full, all further enqueues should be rejected
     for (int i = 3; i < 6; ++i) {
-        EXPECT_EQ(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
+        EXPECT_EQ(acaRingQueueSpscEnqueue(queue, &values[i]), 0);
     }
     EXPECT_EQ(acaRingQueueSpscSize(queue), 3);
 
@@ -551,7 +551,7 @@ TEST(ring_queue_lf, enqueue_and_dequeue) {
 
     // enqueue and dequeue more elements than the capacity to force wrap-around
     for (int i = 0; i < 10; ++i) {
-        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &i), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &i), 0);
         size_t frontIndex = acaRingQueueSpscDequeue(queue);
         EXPECT_EQ(frontIndex, (size_t)(i % 4));
         EXPECT_EQ(queue[frontIndex], i);
@@ -581,7 +581,7 @@ TEST(ring_queue_lf, enqueue_null_elem_rejected) {
     config.fullBehavior  = ACA_RING_QUEUE_REJECT;
     config.isHeapAlloced = true;
     acaRingQueueSpscCreate(queue, &config);
-    EXPECT_EQ(acaRingQueueSpscEnqueue(queue, nullptr), nullptr);
+    EXPECT_EQ(acaRingQueueSpscEnqueue(queue, nullptr), 0);
     EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
     acaRingQueueSpscFree(queue);
 }
@@ -602,7 +602,7 @@ TEST(ring_queue_lf, concurrent_single_producer_consumer) {
     std::thread producer([&]() {
         producerOk = true;
         for (int i = 0; i < numElements; ++i) {
-            while (acaRingQueueSpscEnqueue(queue, &i) == nullptr) {
+            while (acaRingQueueSpscEnqueue(queue, &i) == 0) {
                 // queue full, wait for the consumer to drain it
             }
         }
