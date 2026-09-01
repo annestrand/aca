@@ -1,6 +1,7 @@
 #ifndef ACA_RING_DS_H
 #define ACA_RING_DS_H
 
+#include <cstddef>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -31,6 +32,13 @@ typedef enum aca_ring_queue_ds_type {
     ACA_RING_QUEUE_ASSERT_DS,
     ACA_RING_QUEUE_ASSERT_POW2_DS,
 } aca_ring_queue_ds_type_t;
+
+typedef enum aca_ring_queue_spsc_ds_type {
+    ACA_RING_QUEUE_SPSC_REJECT_DS,
+    ACA_RING_QUEUE_SPSC_REJECT_POW2_DS,
+    ACA_RING_QUEUE_SPSC_ASSERT_DS,
+    ACA_RING_QUEUE_SPSC_ASSERT_POW2_DS,
+} aca_ring_queue_spsc_ds_type_t;
 
 typedef enum aca_ring_queue_ds_full_behavior {
     ACA_RING_QUEUE_OVERWRITE,
@@ -65,8 +73,10 @@ typedef struct aca_ring_queue_ds_header {
 } aca_ring_queue_ds_header_t;
 
 typedef struct aca_ring_queue_spsc_ds_header {
-    size_t capacity;
-    size_t elemSize;
+    size_t                        capacity;
+    size_t                        elemSize;
+    aca_ring_queue_spsc_ds_type_t type;
+    int                           isHeapAlloced;
     ACA_RING_ATOMIC(size_t) head; // owned by the consumer
     ACA_RING_ATOMIC(size_t) tail; // owned by the producer
 } aca_ring_queue_spsc_ds_header_t;
@@ -547,13 +557,42 @@ acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_co
         if (header == NULL) {
             return NULL;
         }
+        header->isHeapAlloced = 1;
     } else {
-        header = (aca_ring_queue_spsc_ds_header_t *)queue;
+        header                = (aca_ring_queue_spsc_ds_header_t *)queue;
+        header->isHeapAlloced = config->isHeapAlloced;
     }
     header->capacity = config->capacity;
     header->elemSize = elemSize;
     ACA_RING_ATOMIC_STORE(&header->head, 0, memory_order_relaxed);
     ACA_RING_ATOMIC_STORE(&header->tail, 0, memory_order_relaxed);
+
+    const int isCapacityPow2 = IsPow2(config->capacity);
+    if (isCapacityPow2) {
+        switch (config->fullBehavior) {
+            case ACA_RING_QUEUE_REJECT:
+                header->type = ACA_RING_QUEUE_SPSC_REJECT_POW2_DS;
+                break;
+            case ACA_RING_QUEUE_ASSERT:
+                header->type = ACA_RING_QUEUE_SPSC_ASSERT_POW2_DS;
+                break;
+            default:
+                assert(0 && "unknown full behavior!");
+                break;
+        }
+    } else {
+        switch (config->fullBehavior) {
+            case ACA_RING_QUEUE_REJECT:
+                header->type = ACA_RING_QUEUE_SPSC_REJECT_DS;
+                break;
+            case ACA_RING_QUEUE_ASSERT:
+                header->type = ACA_RING_QUEUE_SPSC_ASSERT_DS;
+                break;
+            default:
+                assert(0 && "unknown full behavior!");
+                break;
+        }
+    }
 
     return (void *)(header + 1); // return pointer to data, not header
 }
@@ -594,9 +633,24 @@ void *acaRingQueueSpscEnqueue(void *queue, const void *elem) {
     size_t tail     = ACA_RING_ATOMIC_LOAD(&header->tail, memory_order_relaxed);
     size_t head     = ACA_RING_ATOMIC_LOAD(&header->head, memory_order_acquire);
     size_t nextTail = (tail + 1) & (header->capacity - 1);
+
     if (nextTail == head) {
-        return NULL; // queue is full, reject
+        switch (header->type) {
+            case ACA_RING_QUEUE_SPSC_REJECT_DS:
+            case ACA_RING_QUEUE_SPSC_REJECT_POW2_DS:
+                // reject new element, do nothing
+                return 0;
+            case ACA_RING_QUEUE_SPSC_ASSERT_DS:
+            case ACA_RING_QUEUE_SPSC_ASSERT_POW2_DS:
+                // assert failure
+                assert(0 && "ring queue is full!");
+                return 0; // non-debug builds this falls back to "reject" behavior
+            default:
+                assert(0 && "unreachable");
+                return 0;
+        }
     }
+
     char *dataPtr = (char *)(header + 1);
     memcpy(dataPtr + (tail * header->elemSize), elem, header->elemSize);
     ACA_RING_ATOMIC_STORE(&header->tail, nextTail, memory_order_release);
