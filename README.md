@@ -457,6 +457,73 @@ The main config is how a Ring Queue will handle subsequent enqueue ops during a 
 
 Enqueue will return 1 on either success or OVERWRITE, and return 0 for REJECT/ASSERT or any other error case.
 
+### SPSC (Lock-Free) APIs
+
+Both the ring buffer and ring queue have a concurrent variant that is **lock-free** and designed for
+**single producer / single consumer** (SPSC) use. These are useful for safely passing data between two
+threads (e.g. an ISR and a main loop, or a producer/consumer worker pair) without any locks.
+
+The index fields are `ACA_RING_ATOMIC` and use
+`acquire`/`release` memory ordering so that data published by the producer is visible to the consumer.
+
+Below is the concurrent ring buffer API (single producer / single consumer):
+```c
+// SPSC Ring Buffer API
+void  *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity);
+void   acaRingBufferSpscFree(void *buffer);
+size_t acaRingBufferSpscCapacity(void *buffer);
+size_t acaRingBufferSpscFront(void *buffer);
+void   acaRingBufferSpscNext(void *buffer);
+// create macro internally expands to either a C++ wrapper or direct C call
+#define acaRingBufferSpscCreate(T, size)
+```
+The concurrent ring buffer mirrors the non-concurrent one: `acaRingBufferSpscNext` advances the
+storage's single `head` iterator, and `acaRingBufferSpscFront` peeks at the current head value
+without advancing it. Isolated ownership of `head` (only the consumer advances it) is what makes
+iteration lock-free.
+
+Below is the concurrent ring queue API (single producer / single consumer):
+```c
+// SPSC Ring Queue API
+void *
+acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
+void   acaRingQueueSpscFree(void *queue);
+size_t acaRingQueueSpscSize(void *queue);
+size_t acaRingQueueSpscCapacity(void *queue);
+void  *acaRingQueueSpscEnqueue(void *queue, const void *elem);
+size_t acaRingQueueSpscDequeue(void *queue);
+size_t acaRingQueueSpscFront(void *queue);
+int    acaRingQueueSpscEmpty(void *queue);
+int    acaRingQueueSpscFull(void *queue);
+// create macro internally expands to either a C++ wrapper or direct C call
+#define acaRingQueueSpscCreate(T, config)
+```
+The concurrent ring queue is built on the same FIFO mechanics as the non-concurrent one, but the
+`head` (owned by the consumer) and `tail` (owned by the producer) are atomic, which decouples the two
+threads so they never write to the same index. It is also a "waste-one-slot" queue, so its usable
+capacity is `(capacity-1)`.
+
+`acaRingQueueSpscEnqueue` returns `int` 1 on success, or 0 when
+the queue is full (or on invalid arguments). `acaRingQueueSpscDequeue` returns the index of the element
+that was removed, or `0` when empty.
+
+Both SPSC variants use the same memory-reservation helpers as their non-concurrent counterparts, but
+with a dedicated prefix:
+```c
+// SPSC Helpers
+#define ACA_RING_BUFFER_SPSC_RESERVE(elemSize, count)                                              \
+    ((count) * (elemSize) + sizeof(aca_ring_buffer_spsc_ds_header_t))
+#define ACA_RING_BUFFER_SPSC_RESERVE_FOR(T, count) ACA_RING_BUFFER_SPSC_RESERVE(sizeof(T), (count))
+#define ACA_RING_QUEUE_SPSC_RESERVE(elemSize, count)                                               \
+    ((count) * (elemSize) + sizeof(aca_ring_queue_spsc_ds_header_t))
+#define ACA_RING_QUEUE_SPSC_RESERVE_FOR(T, count) ACA_RING_QUEUE_SPSC_RESERVE(sizeof(T), (count))
+```
+
+> **Note:** The SPSC queue only supports `REJECT` and `ASSERT` for its `fullBehavior` (the
+> `OVERWRITE` behavior is not supported concurrently and will trigger an assert). Power-of-two
+> capacities are also expected for the lock-free variants, even though the internal type enum still
+> tracks pow2 vs non-pow2 reject/assert variants.
+
 ### Example Usage
 ```c
 #define ACA_RING_DS_IMPLEMENTATION
