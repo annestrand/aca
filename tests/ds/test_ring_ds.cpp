@@ -313,11 +313,11 @@ TEST(ring_buffer_lf, fixed_capacity) {
     acaRingBufferLfCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
 
-    for (int i = 0; i < acaRingBufferLfCapacity(ringBuffer); ++i) {
+    for (int i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
         ringBuffer[i] = i + 1;
     }
 
-    for (int i = 0; i < acaRingBufferLfCapacity(ringBuffer); ++i) {
+    for (int i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
         EXPECT_EQ(ringBuffer[i], i + 1);
     }
 }
@@ -330,55 +330,55 @@ TEST(ring_buffer_lf, create_rejects_zero_capacity) {
 
 TEST(ring_buffer_lf, create_rejects_zero_elem_size) {
     char *buffer = nullptr;
-    EXPECT_EQ(acaRingBufferLfCreateImpl(buffer, 0, 8), nullptr);
+    EXPECT_EQ(acaRingBufferCreateSpscImpl(buffer, 0, 8), nullptr);
 }
 
 TEST(ring_buffer_lf, create_and_free) {
     int *buffer = nullptr;
     acaRingBufferLfCreate(buffer, 8);
     EXPECT_NE(buffer, nullptr);
-    acaRingBufferLfFree(buffer);
+    acaRingBufferSpscFree(buffer);
 }
 
 TEST(ring_buffer_lf, null_handling) {
-    EXPECT_EQ(acaRingBufferLfCapacity(nullptr), 0);
-    EXPECT_EQ(acaRingBufferLfFront(nullptr), 0);
-    acaRingBufferLfNext(nullptr);
-    acaRingBufferLfFree(nullptr);
+    EXPECT_EQ(acaRingBufferSpscCapacity(nullptr), 0);
+    EXPECT_EQ(acaRingBufferSpscFront(nullptr), 0);
+    acaRingBufferSpscNext(nullptr);
+    acaRingBufferSpscFree(nullptr);
 }
 
 TEST(ring_buffer_lf, capacity_and_front) {
     int *buffer = nullptr;
     acaRingBufferLfCreate(buffer, 8);
-    EXPECT_EQ(acaRingBufferLfCapacity(buffer), 8);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 0);
-    acaRingBufferLfFree(buffer);
+    EXPECT_EQ(acaRingBufferSpscCapacity(buffer), 8);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 0);
+    acaRingBufferSpscFree(buffer);
 }
 
 TEST(ring_buffer_lf, next) {
     int *buffer = nullptr;
     acaRingBufferLfCreate(buffer, 4);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 0);
-    acaRingBufferLfNext(buffer);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 1);
-    acaRingBufferLfNext(buffer);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 2);
-    acaRingBufferLfNext(buffer);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 3);
-    acaRingBufferLfNext(buffer);
-    EXPECT_EQ(acaRingBufferLfFront(buffer), 0); // should wrap around
-    acaRingBufferLfFree(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 0);
+    acaRingBufferSpscNext(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 1);
+    acaRingBufferSpscNext(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 2);
+    acaRingBufferSpscNext(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 3);
+    acaRingBufferSpscNext(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), 0); // should wrap around
+    acaRingBufferSpscFree(buffer);
 }
 
 TEST(ring_buffer_lf, front_wraps_multiple_laps) {
     int *buffer = nullptr;
     acaRingBufferLfCreate(buffer, 4);
     for (int i = 0; i < 10; ++i) {
-        EXPECT_EQ(acaRingBufferLfFront(buffer), (size_t)(i % 4));
-        acaRingBufferLfNext(buffer);
+        EXPECT_EQ(acaRingBufferSpscFront(buffer), (size_t)(i % 4));
+        acaRingBufferSpscNext(buffer);
     }
-    EXPECT_EQ(acaRingBufferLfFront(buffer), (size_t)(10 % 4));
-    acaRingBufferLfFree(buffer);
+    EXPECT_EQ(acaRingBufferSpscFront(buffer), (size_t)(10 % 4));
+    acaRingBufferSpscFree(buffer);
 }
 
 // ring_queue_lf
@@ -394,7 +394,7 @@ TEST(ring_queue_lf, create_rejects_zero_elem_size) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
     config.capacity = 8;
-    EXPECT_EQ(acaRingQueueLfCreateImpl(queue, 0, &config), nullptr);
+    EXPECT_EQ(acaRingQueueCreateSpscImpl(queue, 0, &config), nullptr);
 }
 
 TEST(ring_queue_lf, create_and_free) {
@@ -403,7 +403,7 @@ TEST(ring_queue_lf, create_and_free) {
     config.capacity = 8;
     acaRingQueueLfCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, fixed_capacity) {
@@ -413,19 +413,19 @@ TEST(ring_queue_lf, fixed_capacity) {
     config.capacity = 8;
     acaRingQueueLfCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
-    EXPECT_EQ(acaRingQueueLfCapacity(queue), 8);
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
+    EXPECT_EQ(acaRingQueueSpscCapacity(queue), 8);
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
 }
 
 TEST(ring_queue_lf, null_handling) {
-    EXPECT_EQ(acaRingQueueLfSize(nullptr), 0);
-    EXPECT_EQ(acaRingQueueLfCapacity(nullptr), 0);
-    EXPECT_EQ(acaRingQueueLfEnqueue(nullptr, nullptr), nullptr);
-    EXPECT_EQ(acaRingQueueLfDequeue(nullptr), 0);
-    EXPECT_EQ(acaRingQueueLfFront(nullptr), 0);
-    EXPECT_TRUE(acaRingQueueLfEmpty(nullptr));
-    EXPECT_FALSE(acaRingQueueLfFull(nullptr));
-    acaRingQueueLfFree(nullptr);
+    EXPECT_EQ(acaRingQueueSpscSize(nullptr), 0);
+    EXPECT_EQ(acaRingQueueSpscCapacity(nullptr), 0);
+    EXPECT_EQ(acaRingQueueSpscEnqueue(nullptr, nullptr), nullptr);
+    EXPECT_EQ(acaRingQueueSpscDequeue(nullptr), 0);
+    EXPECT_EQ(acaRingQueueSpscFront(nullptr), 0);
+    EXPECT_TRUE(acaRingQueueSpscEmpty(nullptr));
+    EXPECT_FALSE(acaRingQueueSpscFull(nullptr));
+    acaRingQueueSpscFree(nullptr);
 }
 
 TEST(ring_queue_lf, size_and_capacity) {
@@ -434,16 +434,16 @@ TEST(ring_queue_lf, size_and_capacity) {
     config.capacity = 8;
     acaRingQueueLfCreate(queue, &config);
 
-    EXPECT_EQ(acaRingQueueLfSize(queue), 0);
-    EXPECT_EQ(acaRingQueueLfCapacity(queue), 8);
+    EXPECT_EQ(acaRingQueueSpscSize(queue), 0);
+    EXPECT_EQ(acaRingQueueSpscCapacity(queue), 8);
 
     int values[] = {1, 2, 3};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueLfEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
     }
-    EXPECT_EQ(acaRingQueueLfSize(queue), 3);
+    EXPECT_EQ(acaRingQueueSpscSize(queue), 3);
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, empty_and_full) {
@@ -452,18 +452,18 @@ TEST(ring_queue_lf, empty_and_full) {
     config.capacity = 4;
     acaRingQueueLfCreate(queue, &config);
 
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
-    EXPECT_FALSE(acaRingQueueLfFull(queue));
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
+    EXPECT_FALSE(acaRingQueueSpscFull(queue));
 
     int values[] = {1, 2, 3};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueLfEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
     }
 
-    EXPECT_FALSE(acaRingQueueLfEmpty(queue));
-    EXPECT_TRUE(acaRingQueueLfFull(queue));
+    EXPECT_FALSE(acaRingQueueSpscEmpty(queue));
+    EXPECT_TRUE(acaRingQueueSpscFull(queue));
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, reject_when_full) {
@@ -475,23 +475,23 @@ TEST(ring_queue_lf, reject_when_full) {
 
     int values[] = {1, 2, 3, 4, 5, 6};
     for (int i = 0; i < 3; ++i) {
-        EXPECT_NE(acaRingQueueLfEnqueue(queue, &values[i]), nullptr);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
     }
 
     // queue is full, all further enqueues should be rejected
     for (int i = 3; i < 6; ++i) {
-        EXPECT_EQ(acaRingQueueLfEnqueue(queue, &values[i]), nullptr);
+        EXPECT_EQ(acaRingQueueSpscEnqueue(queue, &values[i]), nullptr);
     }
-    EXPECT_EQ(acaRingQueueLfSize(queue), 3);
+    EXPECT_EQ(acaRingQueueSpscSize(queue), 3);
 
     for (int i = 0; i < 3; ++i) {
-        size_t frontIndex = acaRingQueueLfDequeue(queue);
+        size_t frontIndex = acaRingQueueSpscDequeue(queue);
         EXPECT_EQ(frontIndex, (size_t)(i));
         EXPECT_EQ(queue[frontIndex], values[i]);
     }
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, enqueue_and_front) {
@@ -502,17 +502,17 @@ TEST(ring_queue_lf, enqueue_and_front) {
 
     int values[] = {10, 20, 30};
     for (int i = 0; i < 3; ++i) {
-        acaRingQueueLfEnqueue(queue, &values[i]);
-        size_t frontIndex = acaRingQueueLfFront(queue);
+        acaRingQueueSpscEnqueue(queue, &values[i]);
+        size_t frontIndex = acaRingQueueSpscFront(queue);
         EXPECT_EQ(frontIndex, 0);
         EXPECT_EQ(queue[frontIndex], values[0]);
     }
 
-    acaRingQueueLfDequeue(queue);
-    EXPECT_EQ(acaRingQueueLfFront(queue), 1);
-    EXPECT_EQ(queue[acaRingQueueLfFront(queue)], values[1]);
+    acaRingQueueSpscDequeue(queue);
+    EXPECT_EQ(acaRingQueueSpscFront(queue), 1);
+    EXPECT_EQ(queue[acaRingQueueSpscFront(queue)], values[1]);
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, enqueue_and_dequeue) {
@@ -523,16 +523,16 @@ TEST(ring_queue_lf, enqueue_and_dequeue) {
 
     // enqueue and dequeue more elements than the capacity to force wrap-around
     for (int i = 0; i < 10; ++i) {
-        EXPECT_NE(acaRingQueueLfEnqueue(queue, &i), nullptr);
-        size_t frontIndex = acaRingQueueLfDequeue(queue);
+        EXPECT_NE(acaRingQueueSpscEnqueue(queue, &i), nullptr);
+        size_t frontIndex = acaRingQueueSpscDequeue(queue);
         EXPECT_EQ(frontIndex, (size_t)(i % 4));
         EXPECT_EQ(queue[frontIndex], i);
     }
 
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
-    EXPECT_EQ(acaRingQueueLfSize(queue), 0);
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
+    EXPECT_EQ(acaRingQueueSpscSize(queue), 0);
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, dequeue_empty_returns_zero) {
@@ -540,8 +540,8 @@ TEST(ring_queue_lf, dequeue_empty_returns_zero) {
     aca_ring_queue_config_t config;
     config.capacity = 4;
     acaRingQueueLfCreate(queue, &config);
-    EXPECT_EQ(acaRingQueueLfDequeue(queue), 0);
-    acaRingQueueLfFree(queue);
+    EXPECT_EQ(acaRingQueueSpscDequeue(queue), 0);
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, enqueue_null_elem_rejected) {
@@ -549,9 +549,9 @@ TEST(ring_queue_lf, enqueue_null_elem_rejected) {
     aca_ring_queue_config_t config;
     config.capacity = 4;
     acaRingQueueLfCreate(queue, &config);
-    EXPECT_EQ(acaRingQueueLfEnqueue(queue, nullptr), nullptr);
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
-    acaRingQueueLfFree(queue);
+    EXPECT_EQ(acaRingQueueSpscEnqueue(queue, nullptr), nullptr);
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
+    acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, concurrent_single_producer_consumer) {
@@ -568,7 +568,7 @@ TEST(ring_queue_lf, concurrent_single_producer_consumer) {
     std::thread producer([&]() {
         producerOk = true;
         for (int i = 0; i < numElements; ++i) {
-            while (acaRingQueueLfEnqueue(queue, &i) == nullptr) {
+            while (acaRingQueueSpscEnqueue(queue, &i) == nullptr) {
                 // queue full, wait for the consumer to drain it
             }
         }
@@ -580,10 +580,10 @@ TEST(ring_queue_lf, concurrent_single_producer_consumer) {
         while (received < numElements) {
             // only this thread dequeues, so a non-empty check here means the
             // dequeue below is guaranteed to succeed
-            if (acaRingQueueLfEmpty(queue)) {
+            if (acaRingQueueSpscEmpty(queue)) {
                 continue;
             }
-            size_t frontIndex = acaRingQueueLfDequeue(queue);
+            size_t frontIndex = acaRingQueueSpscDequeue(queue);
             EXPECT_EQ(queue[frontIndex], received);
             ++received;
         }
@@ -593,7 +593,7 @@ TEST(ring_queue_lf, concurrent_single_producer_consumer) {
     consumer.join();
     EXPECT_TRUE(producerOk);
     EXPECT_TRUE(consumerOk);
-    EXPECT_TRUE(acaRingQueueLfEmpty(queue));
+    EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
 
-    acaRingQueueLfFree(queue);
+    acaRingQueueSpscFree(queue);
 }
