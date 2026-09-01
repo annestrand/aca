@@ -21,61 +21,7 @@
 typedef enum aca_ring_buffer_ds_type {
     ACA_RING_BUFFER_DS = 0,
     ACA_RING_BUFFER_POW2_DS,
-
 } aca_ring_buffer_ds_type_t;
-
-typedef struct aca_ring_buffer_ds_header {
-    size_t                    size;
-    size_t                    head;
-    aca_ring_buffer_ds_type_t type;
-} aca_ring_buffer_ds_header_t;
-
-#define ACA_RING_BUFFER_RESERVE(elemSize, count)                                                   \
-    ((count) * (elemSize) + sizeof(aca_ring_buffer_ds_header_t))
-#define ACA_RING_BUFFER_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
-
-// acaRingBuffer API
-void  *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity);
-void   acaRingBufferFree(void *buffer);
-size_t acaRingBufferCapacity(void *buffer);
-size_t acaRingBufferFront(void *buffer);
-void   acaRingBufferNext(void *buffer);
-#ifdef __cplusplus
-template <typename T>
-static T *acaRingBufferCreateCpp(T *buffer, size_t elemSize, size_t capacity) {
-    return (T *)acaRingBufferCreateImpl(buffer, elemSize, capacity);
-}
-#define acaRingBufferCreate(T, size) ((T) = acaRingBufferCreateCpp((T), (sizeof(*(T))), (size)))
-#else
-#define acaRingBufferCreate(T, size) (T) = (acaRingBufferCreateImpl((T), (sizeof(*(T))), (size)))
-#endif // __cplusplus
-
-typedef struct aca_ring_buffer_spsc_ds_header {
-    size_t size;
-    ACA_RING_ATOMIC(size_t) head; // owned by the consumer
-} aca_ring_buffer_spsc_ds_header_t;
-
-#define ACA_RING_BUFFER_LF_RESERVE(elemSize, count)                                                \
-    ((count) * (elemSize) + sizeof(aca_ring_buffer_spsc_ds_header_t))
-#define ACA_RING_BUFFER_LF_RESERVE_FOR(T, count) ACA_RING_BUFFER_LF_RESERVE(sizeof(T), (count))
-
-// concurrent acaRingBuffer API (lock-free, single producer / single consumer)
-void  *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity);
-void   acaRingBufferSpscFree(void *buffer);
-size_t acaRingBufferSpscCapacity(void *buffer);
-size_t acaRingBufferSpscFront(void *buffer);
-void   acaRingBufferSpscNext(void *buffer);
-#ifdef __cplusplus
-template <typename T>
-static T *acaRingBufferCreateSpscCpp(T *buffer, size_t elemSize, size_t capacity) {
-    return (T *)acaRingBufferCreateSpscImpl(buffer, elemSize, capacity);
-}
-#define acaRingBufferLfCreate(T, size)                                                             \
-    ((T) = acaRingBufferCreateSpscCpp((T), (sizeof(*(T))), (size)))
-#else
-#define acaRingBufferLfCreate(T, size)                                                             \
-    (T) = (acaRingBufferCreateSpscImpl((T), (sizeof(*(T))), (size)))
-#endif // __cplusplus
 
 typedef enum aca_ring_queue_ds_type {
     ACA_RING_QUEUE_OVERWRITE_DS,
@@ -92,6 +38,23 @@ typedef enum aca_ring_queue_ds_full_behavior {
     ACA_RING_QUEUE_ASSERT,
 } aca_ring_queue_ds_full_behavior_t;
 
+typedef struct aca_ring_queue_ds_config {
+    size_t                            capacity;
+    int                               isHeapAlloced;
+    aca_ring_queue_ds_full_behavior_t fullBehavior;
+} aca_ring_queue_config_t;
+
+typedef struct aca_ring_buffer_ds_header {
+    size_t                    size;
+    size_t                    head;
+    aca_ring_buffer_ds_type_t type;
+} aca_ring_buffer_ds_header_t;
+
+typedef struct aca_ring_buffer_spsc_ds_header {
+    size_t size;
+    ACA_RING_ATOMIC(size_t) head; // owned by the consumer
+} aca_ring_buffer_spsc_ds_header_t;
+
 typedef struct aca_ring_queue_ds_header {
     size_t                   capacity;
     size_t                   elemSize;
@@ -101,16 +64,63 @@ typedef struct aca_ring_queue_ds_header {
     int                      isHeapAlloced;
 } aca_ring_queue_ds_header_t;
 
+typedef struct aca_ring_queue_spsc_ds_header {
+    size_t capacity;
+    size_t elemSize;
+    ACA_RING_ATOMIC(size_t) head; // owned by the consumer
+    ACA_RING_ATOMIC(size_t) tail; // owned by the producer
+} aca_ring_queue_spsc_ds_header_t;
+
+#define ACA_RING_BUFFER_RESERVE(elemSize, count)                                                   \
+    ((count) * (elemSize) + sizeof(aca_ring_buffer_ds_header_t))
+#define ACA_RING_BUFFER_RESERVE_FOR(T, count) ACA_RING_BUFFER_RESERVE(sizeof(T), (count))
+#define ACA_RING_BUFFER_SCPC_RESERVE(elemSize, count)                                              \
+    ((count) * (elemSize) + sizeof(aca_ring_buffer_spsc_ds_header_t))
+#define ACA_RING_BUFFER_SCPC_RESERVE_FOR(T, count) ACA_RING_BUFFER_SCPC_RESERVE(sizeof(T), (count))
 #define ACA_RING_QUEUE_RESERVE(elemSize, count)                                                    \
     ((count) * (sizeof(elemSize)) + sizeof(aca_ring_queue_ds_header_t))
 #define ACA_RING_QUEUE_RESERVE_FOR(T, count) ACA_RING_QUEUE_RESERVE(sizeof(T), (count))
+#define ACA_RING_QUEUE_SPSC_RESERVE(elemSize, count)                                               \
+    ((count) * (elemSize) + sizeof(aca_ring_queue_spsc_ds_header_t))
+#define ACA_RING_QUEUE_SPSC_RESERVE_FOR(T, count) ACA_RING_QUEUE_SPSC_RESERVE(sizeof(T), (count))
 
-typedef struct aca_ring_queue_ds_config {
-    size_t                            capacity;
-    int                               isHeapAlloced;
-    aca_ring_queue_ds_full_behavior_t fullBehavior;
-} aca_ring_queue_config_t;
+// ------------------------------------------------------------------------------------------------
+// acaRingBuffer API
+void  *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity);
+void   acaRingBufferFree(void *buffer);
+size_t acaRingBufferCapacity(void *buffer);
+size_t acaRingBufferFront(void *buffer);
+void   acaRingBufferNext(void *buffer);
+#ifdef __cplusplus
+template <typename T>
+static T *acaRingBufferCreateCpp(T *buffer, size_t elemSize, size_t capacity) {
+    return (T *)acaRingBufferCreateImpl(buffer, elemSize, capacity);
+}
+#define acaRingBufferCreate(T, size) ((T) = acaRingBufferCreateCpp((T), (sizeof(*(T))), (size)))
+#else
+#define acaRingBufferCreate(T, size) (T) = (acaRingBufferCreateImpl((T), (sizeof(*(T))), (size)))
+#endif // __cplusplus
 
+// ------------------------------------------------------------------------------------------------
+// concurrent acaRingBuffer API - lock-free, single producer / single consumer (spsc)
+void  *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity);
+void   acaRingBufferSpscFree(void *buffer);
+size_t acaRingBufferSpscCapacity(void *buffer);
+size_t acaRingBufferSpscFront(void *buffer);
+void   acaRingBufferSpscNext(void *buffer);
+#ifdef __cplusplus
+template <typename T>
+static T *acaRingBufferCreateSpscCpp(T *buffer, size_t elemSize, size_t capacity) {
+    return (T *)acaRingBufferCreateSpscImpl(buffer, elemSize, capacity);
+}
+#define acaRingBufferSpscCreate(T, size)                                                           \
+    ((T) = acaRingBufferCreateSpscCpp((T), (sizeof(*(T))), (size)))
+#else
+#define acaRingBufferSpscCreate(T, size)                                                           \
+    (T) = (acaRingBufferCreateSpscImpl((T), (sizeof(*(T))), (size)))
+#endif // __cplusplus
+
+// ------------------------------------------------------------------------------------------------
 // acaRingQueue API
 void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
 void   acaRingQueueFree(void *queue);
@@ -132,18 +142,8 @@ static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_
 #define acaRingQueueCreate(T, config) (T) = (acaRingQueueCreateImpl((T), (sizeof(*(T))), (config)))
 #endif // __cplusplus
 
-typedef struct aca_ring_queue_spsc_ds_header {
-    size_t capacity;
-    size_t elemSize;
-    ACA_RING_ATOMIC(size_t) head; // owned by the consumer
-    ACA_RING_ATOMIC(size_t) tail; // owned by the producer
-} aca_ring_queue_spsc_ds_header_t;
-
-#define ACA_RING_QUEUE_LF_RESERVE(elemSize, count)                                                 \
-    ((count) * (elemSize) + sizeof(aca_ring_queue_spsc_ds_header_t))
-#define ACA_RING_QUEUE_LF_RESERVE_FOR(T, count) ACA_RING_QUEUE_LF_RESERVE(sizeof(T), (count))
-
-// concurrent acaRingQueue API (lock-free, single producer / single consumer)
+// ------------------------------------------------------------------------------------------------
+// concurrent acaRingQueue API - lock-free, single producer / single consumer (spsc)
 void *
 acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
 void   acaRingQueueSpscFree(void *queue);
@@ -160,13 +160,14 @@ static T *
 acaRingQueueCreateSpscCpp(T *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
     return (T *)acaRingQueueCreateSpscImpl(queue, elemSize, config);
 }
-#define acaRingQueueLfCreate(T, config)                                                            \
+#define acaRingQueueSpscCreate(T, config)                                                          \
     ((T) = acaRingQueueCreateSpscCpp((T), (sizeof(*(T))), (config)))
 #else
-#define acaRingQueueLfCreate(T, config)                                                            \
+#define acaRingQueueSpscCreate(T, config)                                                          \
     (T) = (acaRingQueueCreateSpscImpl((T), (sizeof(*(T))), (config)))
 #endif // __cplusplus
 
+// ------------------------------------------------------------------------------------------------
 #ifdef ACA_RING_DS_IMPLEMENTATION
 
 #include <assert.h>
@@ -485,7 +486,7 @@ void *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity
     aca_ring_buffer_spsc_ds_header_t *header;
     if (buffer == NULL) {
         header = (aca_ring_buffer_spsc_ds_header_t *)malloc(
-            ACA_RING_BUFFER_LF_RESERVE(elemSize, capacity));
+            ACA_RING_BUFFER_SCPC_RESERVE(elemSize, capacity));
         if (header == NULL) {
             return NULL;
         }
@@ -542,7 +543,7 @@ acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_co
     aca_ring_queue_spsc_ds_header_t *header;
     if (queue == NULL) {
         header = (aca_ring_queue_spsc_ds_header_t *)malloc(
-            ACA_RING_QUEUE_LF_RESERVE(elemSize, config->capacity));
+            ACA_RING_QUEUE_SPSC_RESERVE(elemSize, config->capacity));
         if (header == NULL) {
             return NULL;
         }

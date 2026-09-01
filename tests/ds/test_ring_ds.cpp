@@ -76,8 +76,9 @@ TEST(ring_queue, fixed_capacity) {
 TEST(ring_queue, create_and_free) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 8;
-    config.fullBehavior = ACA_RING_QUEUE_REJECT;
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
     acaRingQueueFree(queue);
@@ -86,8 +87,9 @@ TEST(ring_queue, create_and_free) {
 TEST(ring_queue, size_and_capacity) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 8;
-    config.fullBehavior = ACA_RING_QUEUE_REJECT;
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     EXPECT_EQ(acaRingQueueSize(queue), 0);
@@ -99,8 +101,9 @@ TEST(ring_queue, size_and_capacity) {
 TEST(ring_queue, empty_and_full) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     EXPECT_TRUE(acaRingQueueEmpty(queue));
@@ -120,8 +123,9 @@ TEST(ring_queue, empty_and_full) {
 TEST(ring_queue, enqueue_and_front) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     for (int i = 0; i < 3; ++i) {
@@ -138,8 +142,9 @@ TEST(ring_queue, enqueue_and_dequeue) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     for (int i = 0; i < 6; ++i) {
@@ -165,8 +170,9 @@ TEST(ring_queue, full_behavior_reject) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
     char                   *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_REJECT;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     char values[] = {'a', 'b', 'c', 'd', 'e', 'f'};
@@ -191,8 +197,9 @@ TEST(ring_queue, full_behavior_overwrite) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
     float                  *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     float values[] = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f};
@@ -219,8 +226,9 @@ TEST(ring_queue, full_behavior_assert) {
     // aca_ring_queue_ds impl is "waste-one-slot", we can only enqueue 3 items in a capacity of 4.
     unsigned int           *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_ASSERT;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_ASSERT;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     unsigned int values[] = {100, 200, 300, 400, 500};
@@ -250,8 +258,9 @@ TEST(ring_queue, full_behavior_assert) {
 TEST(ring_queue, dynamic_resize) {
     double                 *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 4;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     double values[] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0};
@@ -273,8 +282,9 @@ TEST(ring_queue, dynamic_resize) {
 TEST(ring_queue, dynamic_enqueue_dequeue) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity     = 8;
-    config.fullBehavior = ACA_RING_QUEUE_OVERWRITE;
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_OVERWRITE;
+    config.isHeapAlloced = true;
     acaRingQueueCreate(queue, &config);
 
     // enqueue-and-dequeue around half of the capacity, then enqueue more to
@@ -308,9 +318,9 @@ TEST(ring_queue, dynamic_enqueue_dequeue) {
 // ring_buffer_lf
 
 TEST(ring_buffer_lf, fixed_capacity) {
-    char buffer[ACA_RING_BUFFER_LF_RESERVE(int, 8)];
+    char buffer[ACA_RING_BUFFER_SCPC_RESERVE(int, 8)];
     int *ringBuffer = (int *)buffer;
-    acaRingBufferLfCreate(ringBuffer, 8);
+    acaRingBufferSpscCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
 
     for (int i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
@@ -325,7 +335,7 @@ TEST(ring_buffer_lf, fixed_capacity) {
 TEST(ring_buffer_lf, create_rejects_zero_capacity) {
     char buffer[16];
     int *ringBuffer = (int *)buffer;
-    EXPECT_EQ(acaRingBufferLfCreate(ringBuffer, 0), nullptr);
+    EXPECT_EQ(acaRingBufferSpscCreate(ringBuffer, 0), nullptr);
 }
 
 TEST(ring_buffer_lf, create_rejects_zero_elem_size) {
@@ -335,7 +345,7 @@ TEST(ring_buffer_lf, create_rejects_zero_elem_size) {
 
 TEST(ring_buffer_lf, create_and_free) {
     int *buffer = nullptr;
-    acaRingBufferLfCreate(buffer, 8);
+    acaRingBufferSpscCreate(buffer, 8);
     EXPECT_NE(buffer, nullptr);
     acaRingBufferSpscFree(buffer);
 }
@@ -349,7 +359,7 @@ TEST(ring_buffer_lf, null_handling) {
 
 TEST(ring_buffer_lf, capacity_and_front) {
     int *buffer = nullptr;
-    acaRingBufferLfCreate(buffer, 8);
+    acaRingBufferSpscCreate(buffer, 8);
     EXPECT_EQ(acaRingBufferSpscCapacity(buffer), 8);
     EXPECT_EQ(acaRingBufferSpscFront(buffer), 0);
     acaRingBufferSpscFree(buffer);
@@ -357,7 +367,7 @@ TEST(ring_buffer_lf, capacity_and_front) {
 
 TEST(ring_buffer_lf, next) {
     int *buffer = nullptr;
-    acaRingBufferLfCreate(buffer, 4);
+    acaRingBufferSpscCreate(buffer, 4);
     EXPECT_EQ(acaRingBufferSpscFront(buffer), 0);
     acaRingBufferSpscNext(buffer);
     EXPECT_EQ(acaRingBufferSpscFront(buffer), 1);
@@ -372,7 +382,7 @@ TEST(ring_buffer_lf, next) {
 
 TEST(ring_buffer_lf, front_wraps_multiple_laps) {
     int *buffer = nullptr;
-    acaRingBufferLfCreate(buffer, 4);
+    acaRingBufferSpscCreate(buffer, 4);
     for (int i = 0; i < 10; ++i) {
         EXPECT_EQ(acaRingBufferSpscFront(buffer), (size_t)(i % 4));
         acaRingBufferSpscNext(buffer);
@@ -386,32 +396,40 @@ TEST(ring_buffer_lf, front_wraps_multiple_laps) {
 TEST(ring_queue_lf, create_rejects_zero_capacity) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 0;
-    EXPECT_EQ(acaRingQueueLfCreate(queue, &config), nullptr);
+    config.capacity      = 0;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    EXPECT_EQ(acaRingQueueSpscCreate(queue, &config), nullptr);
 }
 
 TEST(ring_queue_lf, create_rejects_zero_elem_size) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 8;
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
     EXPECT_EQ(acaRingQueueCreateSpscImpl(queue, 0, &config), nullptr);
 }
 
 TEST(ring_queue_lf, create_and_free) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 8;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
     acaRingQueueSpscFree(queue);
 }
 
 TEST(ring_queue_lf, fixed_capacity) {
-    char                    buffer[ACA_RING_QUEUE_LF_RESERVE(int, 8)];
+    char                    buffer[ACA_RING_QUEUE_SPSC_RESERVE(int, 8)];
     int                    *queue = (int *)buffer;
     aca_ring_queue_config_t config;
-    config.capacity = 8;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = false;
+    acaRingQueueSpscCreate(queue, &config);
     EXPECT_NE(queue, nullptr);
     EXPECT_EQ(acaRingQueueSpscCapacity(queue), 8);
     EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
@@ -431,8 +449,10 @@ TEST(ring_queue_lf, null_handling) {
 TEST(ring_queue_lf, size_and_capacity) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 8;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     EXPECT_EQ(acaRingQueueSpscSize(queue), 0);
     EXPECT_EQ(acaRingQueueSpscCapacity(queue), 8);
@@ -449,8 +469,10 @@ TEST(ring_queue_lf, size_and_capacity) {
 TEST(ring_queue_lf, empty_and_full) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
     EXPECT_FALSE(acaRingQueueSpscFull(queue));
@@ -470,8 +492,10 @@ TEST(ring_queue_lf, reject_when_full) {
     // wastes one slot, so only 3 elements fit in a capacity of 4
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     int values[] = {1, 2, 3, 4, 5, 6};
     for (int i = 0; i < 3; ++i) {
@@ -497,8 +521,10 @@ TEST(ring_queue_lf, reject_when_full) {
 TEST(ring_queue_lf, enqueue_and_front) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     int values[] = {10, 20, 30};
     for (int i = 0; i < 3; ++i) {
@@ -518,8 +544,10 @@ TEST(ring_queue_lf, enqueue_and_front) {
 TEST(ring_queue_lf, enqueue_and_dequeue) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     // enqueue and dequeue more elements than the capacity to force wrap-around
     for (int i = 0; i < 10; ++i) {
@@ -538,8 +566,10 @@ TEST(ring_queue_lf, enqueue_and_dequeue) {
 TEST(ring_queue_lf, dequeue_empty_returns_zero) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
     EXPECT_EQ(acaRingQueueSpscDequeue(queue), 0);
     acaRingQueueSpscFree(queue);
 }
@@ -547,8 +577,10 @@ TEST(ring_queue_lf, dequeue_empty_returns_zero) {
 TEST(ring_queue_lf, enqueue_null_elem_rejected) {
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 4;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 4;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
     EXPECT_EQ(acaRingQueueSpscEnqueue(queue, nullptr), nullptr);
     EXPECT_TRUE(acaRingQueueSpscEmpty(queue));
     acaRingQueueSpscFree(queue);
@@ -558,8 +590,10 @@ TEST(ring_queue_lf, concurrent_single_producer_consumer) {
     // exercise the lock-free path with one producer and one consumer thread
     int                    *queue = nullptr;
     aca_ring_queue_config_t config;
-    config.capacity = 8;
-    acaRingQueueLfCreate(queue, &config);
+    config.capacity      = 8;
+    config.fullBehavior  = ACA_RING_QUEUE_REJECT;
+    config.isHeapAlloced = true;
+    acaRingQueueSpscCreate(queue, &config);
 
     const int numElements = 1000;
     bool      producerOk  = false;
