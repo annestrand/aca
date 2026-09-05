@@ -47,6 +47,12 @@ Build tests:
 cmake -Bbuild && cmake --build build
 ```
 
+## Building examples
+Examples are built by default. Disable them with the `BUILD_EXAMPLES` CMake option:
+```bash
+cmake -Bbuild -DBUILD_EXAMPLES=OFF && cmake --build build
+```
+
 ## Libraries/Utilities:
 
 ## aca_argparse.h:
