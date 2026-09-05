@@ -1,5 +1,7 @@
 #include <thread>
 
+#include <stdint.h>
+
 #include "aca_ring_ds.h"
 #include "gtest/gtest.h"
 
@@ -9,11 +11,11 @@ TEST(ring_buffer, fixed_capacity) {
     acaRingBufferCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
 
-    for (int i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
-        ringBuffer[i] = i + 1;
+    for (size_t i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
+        ringBuffer[i] = static_cast<int>(i) + 1;
     }
 
-    for (int i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
+    for (size_t i = 0; i < acaRingBufferCapacity(ringBuffer); ++i) {
         EXPECT_EQ(ringBuffer[i], i + 1);
     }
 }
@@ -323,11 +325,11 @@ TEST(ring_buffer_lf, fixed_capacity) {
     acaRingBufferSpscCreate(ringBuffer, 8);
     EXPECT_NE(ringBuffer, nullptr);
 
-    for (int i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
-        ringBuffer[i] = i + 1;
+    for (size_t i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
+        ringBuffer[i] = static_cast<int>(i) + 1;
     }
 
-    for (int i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
+    for (size_t i = 0; i < acaRingBufferSpscCapacity(ringBuffer); ++i) {
         EXPECT_EQ(ringBuffer[i], i + 1);
     }
 }

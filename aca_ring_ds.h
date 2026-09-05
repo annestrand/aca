@@ -1,10 +1,10 @@
 #ifndef ACA_RING_DS_H
 #define ACA_RING_DS_H
 
-#include <cstddef>
 #include <stddef.h>
 
 #ifdef __cplusplus
+#include <cstddef>
 #include <atomic>
 #define ACA_RING_ATOMIC(type) std::atomic<type>
 #define ACA_RING_MEMORY_ORDER(order) std::order
@@ -96,11 +96,17 @@ typedef struct aca_ring_queue_spsc_ds_header {
 
 // ------------------------------------------------------------------------------------------------
 // acaRingBuffer API
+#ifdef __cplusplus
+extern "C" {
+#endif
 void  *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity);
 void   acaRingBufferFree(void *buffer);
 size_t acaRingBufferCapacity(void *buffer);
 size_t acaRingBufferFront(void *buffer);
 void   acaRingBufferNext(void *buffer);
+#ifdef __cplusplus
+}
+#endif
 #ifdef __cplusplus
 template <typename T>
 static T *acaRingBufferCreateCpp(T *buffer, size_t elemSize, size_t capacity) {
@@ -113,11 +119,17 @@ static T *acaRingBufferCreateCpp(T *buffer, size_t elemSize, size_t capacity) {
 
 // ------------------------------------------------------------------------------------------------
 // concurrent acaRingBuffer API - lock-free, single producer / single consumer (spsc)
+#ifdef __cplusplus
+extern "C" {
+#endif
 void  *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity);
 void   acaRingBufferSpscFree(void *buffer);
 size_t acaRingBufferSpscCapacity(void *buffer);
 size_t acaRingBufferSpscFront(void *buffer);
 void   acaRingBufferSpscNext(void *buffer);
+#ifdef __cplusplus
+}
+#endif
 #ifdef __cplusplus
 template <typename T>
 static T *acaRingBufferCreateSpscCpp(T *buffer, size_t elemSize, size_t capacity) {
@@ -132,6 +144,9 @@ static T *acaRingBufferCreateSpscCpp(T *buffer, size_t elemSize, size_t capacity
 
 // ------------------------------------------------------------------------------------------------
 // acaRingQueue API
+#ifdef __cplusplus
+extern "C" {
+#endif
 void  *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
 void   acaRingQueueFree(void *queue);
 size_t acaRingQueueSize(void *queue);
@@ -142,6 +157,9 @@ size_t acaRingQueueFront(void *queue);
 int    acaRingQueueEmpty(void *queue);
 int    acaRingQueueFull(void *queue);
 void  *acaRingQueueResize(void *oldQueue, size_t newSize);
+#ifdef __cplusplus
+}
+#endif
 #ifdef __cplusplus
 template <typename T>
 static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_config_t *config) {
@@ -154,6 +172,9 @@ static T *acaRingQueueCreateCpp(T *queue, size_t elemSize, const aca_ring_queue_
 
 // ------------------------------------------------------------------------------------------------
 // concurrent acaRingQueue API - lock-free, single producer / single consumer (spsc)
+#ifdef __cplusplus
+extern "C" {
+#endif
 void *
 acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_config_t *config);
 void   acaRingQueueSpscFree(void *queue);
@@ -164,6 +185,9 @@ size_t acaRingQueueSpscDequeue(void *queue);
 size_t acaRingQueueSpscFront(void *queue);
 int    acaRingQueueSpscEmpty(void *queue);
 int    acaRingQueueSpscFull(void *queue);
+#ifdef __cplusplus
+}
+#endif
 #ifdef __cplusplus
 template <typename T>
 static T *

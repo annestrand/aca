@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 project(aca)
 set(CMAKE_CXX_STANDARD 11)
 
+option(BUILD_EXAMPLES "Build the aca examples" ON)
+
 # aca tests
 add_executable(aca_tests)
 target_sources(aca_tests PRIVATE
@@ -36,3 +38,7 @@ endif()
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest)
 target_link_libraries(aca_tests GTest::gtest_main)
+
+if (BUILD_EXAMPLES)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)
+endif()

@@ -33,6 +33,10 @@ typedef struct aca_log_handler_args {
 
 typedef void(aca_log_handler)(aca_log_handler_args args);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
 void             acaLogSetHandler(aca_log_handler *handler);
 aca_log_handler *acaLogGetHandler(void);
@@ -42,6 +46,10 @@ void acaLogStandardHandler(aca_log_handler_args args);
 void acaLogBasicHandler(aca_log_handler_args args);
 void acaLogNullHandler(aca_log_handler_args args);
 void acaLogStandardFileHandler(aca_log_handler_args args);
+
+#ifdef __cplusplus
+}
+#endif
 
 // wrapper-macro helpers
 #if !defined(ACA_LOG_STRIP_LOGGING_MACROS)
@@ -225,7 +233,7 @@ static inline void acaLogStandardHandlerImpl(FILE *fp, aca_log_handler_args args
 
 // a more classic and configurable logging - log_tag, timestamp, level, file, line, fmt...
 void acaLogStandardHandler(aca_log_handler_args args) {
-    return acaLogStandardHandlerImpl(stdout, args);
+    acaLogStandardHandlerImpl(stdout, args);
 }
 
 // barebones logging - level fmt...
