@@ -1,8 +1,10 @@
 #include "aca_argparse.h"
 
+#include <cstddef>
+
 #include <gtest/gtest.h>
 
-static aca_argparse_opt_list g_clearOptlist = {ACA_ARGPARSE_HEAD_OPT, NULL};
+static aca_argparse_opt_list gClearOptlist = {ACA_ARGPARSE_HEAD_OPT, NULL};
 
 TEST(argparse, test_valid_options) {
     // Mock argv and argc
@@ -28,7 +30,7 @@ TEST(argparse, test_valid_options) {
     EXPECT_EQ(data.infoBits.used, 1U);
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, test_single_positional_arg) {
@@ -55,7 +57,7 @@ TEST(argparse, test_single_positional_arg) {
     EXPECT_EQ(posIndex, 2);
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, test_positional_args) {
@@ -90,5 +92,5 @@ TEST(argparse, test_positional_args) {
     } while (!posIndex);
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }

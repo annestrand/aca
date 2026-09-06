@@ -26,10 +26,6 @@ KeepEmptyLinesAtTheStartOfBlocks: true
 # Namespace comments
 FixNamespaceComments: true
 
-# Include sorting (preserve order, or change to Regroup if you want sorting)
-IncludeBlocks: Preserve
-SortIncludes: Never
-
 # Short functions/records/namespaces (don't split empty ones unnecessarily)
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false  # Prefer braces for clarity
@@ -39,3 +35,15 @@ AllowShortLoopsOnASingleLine: false
 BinPackParameters: false
 BinPackArguments: false
 SpaceBeforeParens: ControlStatements  # Space after if/for/while, etc.
+
+# Include sorting (preserve order, or change to Regroup if you want sorting)
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+IncludeIsMainRegex: '$'
+IncludeCategories:
+  - Regex:           '^".*"'
+    Priority:        1
+  - Regex:           '^<[^.]*>'
+    Priority:        2
+  - Regex:           '^<.*\.h>'
+    Priority:        3

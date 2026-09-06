@@ -33,7 +33,7 @@ typedef struct aca_argparse_opt_list {
 
 #define ACA_ARGPARSE_STR_MATCH(str1, str2) (strcmp(str1, str2) == 0)
 #define ACA_ARGPARSE_STR_N_MATCH(str1, str2, n) (strncmp(str1, str2, n) == 0)
-#define ACA_ARGPARSE_STR_USED(val) (!(val == NULL) && !(ACA_ARGPARSE_STR_MATCH(val, "")))
+#define ACA_ARGPARSE_STR_USED(val) (!((val) == NULL) && !(ACA_ARGPARSE_STR_MATCH(val, "")))
 #define ACA_ARGPARSE_APPEND_OPT 0
 #define ACA_ARGPARSE_HEAD_OPT 1
 #define ACA_ARGPARSE_HEAD NULL
@@ -45,13 +45,13 @@ typedef struct aca_argparse_opt_list {
                                    "string can only have 1 character");                            \
     aca_argparse_opt option = {"-" sName, "--" lName, desc, "", "", 0, {hasVal, 0, 0}, NULL};      \
     do {                                                                                           \
-        if (strcmp(option.shortName, "-") == 0) {                                                  \
-            option.shortName = "";                                                                 \
+        if (strcmp((option).shortName, "-") == 0) {                                                  \
+            (option).shortName = "";                                                                 \
         }                                                                                          \
-        if (strcmp(option.longName, "--") == 0) {                                                  \
-            option.longName = "";                                                                  \
+        if (strcmp((option).longName, "--") == 0) {                                                  \
+            (option).longName = "";                                                                  \
         }                                                                                          \
-        aca_argparse_opt_list opt = {ACA_ARGPARSE_APPEND_OPT, &option};                            \
+        aca_argparse_opt_list opt = {ACA_ARGPARSE_APPEND_OPT, &(option)};                            \
         acaArgparseOptionListManager(&opt);                                                        \
     } while (0)
 
@@ -66,7 +66,7 @@ enum aca_argparse_err_indexes {
 // aca_arpgarse library main api
 int               acaArgparseParse(int argc, char *argv[]);
 int               acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset);
-void              acaArgparsePrint(void);
+void              acaArgparsePrint();
 aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option);
 
 #ifdef ACA_ARGPARSE_IMPLEMENTATION
@@ -77,19 +77,19 @@ const char *gAcaArgparseErrStrs[] = {"Malformed --<option>=<value>",
                                      "Value given on a non-value opt"};
 
 aca_argparse_opt *acaArgparseOptionListManager(aca_argparse_opt_list *option) {
-    static aca_argparse_opt *aca_argparse_HEAD = NULL;
+    static aca_argparse_opt *pAcaArgparseHead = NULL;
     if (option == NULL) {
-        return aca_argparse_HEAD;
+        return pAcaArgparseHead;
     } else {
-        if (aca_argparse_HEAD == NULL || option->makeHeadNode == ACA_ARGPARSE_HEAD_OPT) {
-            aca_argparse_HEAD = option->opt;
+        if (pAcaArgparseHead == NULL || option->makeHeadNode == ACA_ARGPARSE_HEAD_OPT) {
+            pAcaArgparseHead = option->opt;
             return NULL;
         }
-        aca_argparse_opt *tmp = aca_argparse_HEAD;
-        while (tmp->next != NULL) {
-            tmp = tmp->next;
+        aca_argparse_opt *pTmp = pAcaArgparseHead;
+        while (pTmp->next != NULL) {
+            pTmp = pTmp->next;
         }
-        tmp->next = option->opt;
+        pTmp->next = option->opt;
         return NULL;
     }
 }
@@ -106,78 +106,78 @@ int acaArgparseParse(int argc, char *argv[]) {
 
         int               isLongOpt = 0;
         int               validOpt  = 0;
-        aca_argparse_opt *tmp       = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
+        aca_argparse_opt *pTmp       = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
 
         // Look for opt in opts list
-        while (tmp != NULL) {
-            if (ACA_ARGPARSE_STR_USED(tmp->shortName) &&
-                ACA_ARGPARSE_STR_MATCH(tmp->shortName, argv[i])) {
-                if (tmp->infoBits.used) {
-                    tmp->infoBits.duplicate = 1;
+        while (pTmp != NULL) {
+            if (ACA_ARGPARSE_STR_USED(pTmp->shortName) &&
+                ACA_ARGPARSE_STR_MATCH(pTmp->shortName, argv[i])) {
+                if (pTmp->infoBits.used) {
+                    pTmp->infoBits.duplicate = 1;
                 }
-                tmp->infoBits.used = 1;
-                tmp->index         = i;
+                pTmp->infoBits.used = 1;
+                pTmp->index         = i;
                 validOpt           = 1;
-            } else if (ACA_ARGPARSE_STR_USED(tmp->longName) && !tmp->infoBits.hasValue &&
-                       ACA_ARGPARSE_STR_MATCH(argv[i], tmp->longName)) {
-                if (tmp->infoBits.used) {
-                    tmp->infoBits.duplicate = 1;
+            } else if (ACA_ARGPARSE_STR_USED(pTmp->longName) && !pTmp->infoBits.hasValue &&
+                       ACA_ARGPARSE_STR_MATCH(argv[i], pTmp->longName)) {
+                if (pTmp->infoBits.used) {
+                    pTmp->infoBits.duplicate = 1;
                 }
                 isLongOpt          = 1;
-                tmp->infoBits.used = 1;
-                tmp->index         = i;
+                pTmp->infoBits.used = 1;
+                pTmp->index         = i;
                 validOpt           = 1;
             } else {
-                char  *val    = strchr(argv[i], '=');
-                size_t offset = (int)(val - argv[i]);
-                if (ACA_ARGPARSE_STR_USED(tmp->longName) &&
-                    ACA_ARGPARSE_STR_N_MATCH(argv[i], tmp->longName, offset)) {
-                    if (!tmp->infoBits.hasValue) {
-                        tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL];
-                        tmp->value     = argv[i];
+                char  *pVal    = strchr(argv[i], '=');
+                size_t offset = (int)(pVal - argv[i]);
+                if (ACA_ARGPARSE_STR_USED(pTmp->longName) &&
+                    ACA_ARGPARSE_STR_N_MATCH(argv[i], pTmp->longName, offset)) {
+                    if (!pTmp->infoBits.hasValue) {
+                        pTmp->infoBits.hasErr = 1;
+                        pTmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL];
+                        pTmp->value     = argv[i];
                     }
-                    if (tmp->infoBits.used) {
-                        tmp->infoBits.duplicate = 1;
+                    if (pTmp->infoBits.used) {
+                        pTmp->infoBits.duplicate = 1;
                     }
                     isLongOpt          = 1;
-                    tmp->infoBits.used = 1;
-                    tmp->index         = i;
+                    pTmp->infoBits.used = 1;
+                    pTmp->index         = i;
                     validOpt           = 1;
                 }
             }
-            if (tmp->infoBits.used && tmp->infoBits.hasValue && validOpt) {
+            if (pTmp->infoBits.used && pTmp->infoBits.hasValue && validOpt) {
                 if (isLongOpt) {
-                    char  *val;
-                    size_t offset;
-                    val = strchr(argv[i], '=');
-                    if (val == NULL) {
-                        tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL];
-                        tmp->value     = argv[i];
+                    char  *pVal = nullptr;
+                    size_t offset = 0;
+                    pVal = strchr(argv[i], '=');
+                    if (pVal == NULL) {
+                        pTmp->infoBits.hasErr = 1;
+                        pTmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL];
+                        pTmp->value     = argv[i];
                     } else {
-                        offset     = (int)(val - argv[i]);
-                        tmp->value = &argv[i][offset + 1];
+                        offset     = (int)(pVal - argv[i]);
+                        pTmp->value = &argv[i][offset + 1];
                     }
-                    tmp->infoBits.longOpt = 1;
+                    pTmp->infoBits.longOpt = 1;
                 } else {
                     if ((i + 1) >= argc) {
-                        tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV];
+                        pTmp->infoBits.hasErr = 1;
+                        pTmp->errValMsg = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV];
                     } else if (argv[i + 1][0] == '-') {
-                        tmp->infoBits.hasErr = 1;
-                        tmp->errValMsg       = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_VAL_IS_OPT];
-                        tmp->value           = argv[i + 1];
+                        pTmp->infoBits.hasErr = 1;
+                        pTmp->errValMsg       = gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_VAL_IS_OPT];
+                        pTmp->value           = argv[i + 1];
                     } else {
-                        tmp->value = argv[i + 1];
+                        pTmp->value = argv[i + 1];
                         ++i;
                     }
                 }
             }
-            if (tmp->infoBits.used && validOpt) {
+            if (pTmp->infoBits.used && validOpt) {
                 break;
             }
-            tmp = tmp->next;
+            pTmp = pTmp->next;
         }
 
         // Track first occurance of unknown opt
@@ -198,13 +198,13 @@ int acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset) {
 
         // Otherwise check if arg is opt-value type or not
         int               isOptValue = 0;
-        aca_argparse_opt *tmp        = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
-        while (tmp != NULL) {
-            if (tmp->infoBits.used && tmp->infoBits.hasValue &&
-                (tmp->index == i - 1 && !tmp->infoBits.longOpt)) {
+        aca_argparse_opt *pTmp        = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
+        while (pTmp != NULL) {
+            if (pTmp->infoBits.used && pTmp->infoBits.hasValue &&
+                (pTmp->index == i - 1 && !pTmp->infoBits.longOpt)) {
                 isOptValue = 1;
             }
-            tmp = tmp->next;
+            pTmp = pTmp->next;
         }
 
         // Found positional arg
@@ -215,41 +215,41 @@ int acaArgparseGetPositionalArg(int argc, char *argv[], int argvOffset) {
     return 0;
 }
 
-void acaArgparsePrint(void) {
-    aca_argparse_opt *tmp = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
-    while (tmp != NULL) {
-        if (tmp->infoBits.hasValue) {
-            if (ACA_ARGPARSE_STR_USED(tmp->shortName) && ACA_ARGPARSE_STR_USED(tmp->longName)) {
-                printf("  %s <value>, %s=<value>\n", tmp->shortName, tmp->longName);
-            } else if (ACA_ARGPARSE_STR_USED(tmp->shortName)) {
-                printf("  %s <value>\n", tmp->shortName);
-            } else if (ACA_ARGPARSE_STR_USED(tmp->longName)) {
-                printf("  %s <value>\n", tmp->longName);
+void acaArgparsePrint() {
+    aca_argparse_opt *pTmp = acaArgparseOptionListManager(ACA_ARGPARSE_HEAD);
+    while (pTmp != NULL) {
+        if (pTmp->infoBits.hasValue) {
+            if (ACA_ARGPARSE_STR_USED(pTmp->shortName) && ACA_ARGPARSE_STR_USED(pTmp->longName)) {
+                printf("  %s <value>, %s=<value>\n", pTmp->shortName, pTmp->longName);
+            } else if (ACA_ARGPARSE_STR_USED(pTmp->shortName)) {
+                printf("  %s <value>\n", pTmp->shortName);
+            } else if (ACA_ARGPARSE_STR_USED(pTmp->longName)) {
+                printf("  %s <value>\n", pTmp->longName);
             } else {
-                tmp = tmp->next;
+                pTmp = pTmp->next;
                 continue;
             }
 
-            if (ACA_ARGPARSE_STR_USED(tmp->description)) {
-                printf("        %s\n\n", tmp->description);
+            if (ACA_ARGPARSE_STR_USED(pTmp->description)) {
+                printf("        %s\n\n", pTmp->description);
             }
         } else {
-            if (ACA_ARGPARSE_STR_USED(tmp->shortName) && ACA_ARGPARSE_STR_USED(tmp->longName)) {
-                printf("  %s, %s\n", tmp->shortName, tmp->longName);
-            } else if (ACA_ARGPARSE_STR_USED(tmp->shortName)) {
-                printf("  %s\n", tmp->shortName);
-            } else if (ACA_ARGPARSE_STR_USED(tmp->longName)) {
-                printf("  %s\n", tmp->longName);
+            if (ACA_ARGPARSE_STR_USED(pTmp->shortName) && ACA_ARGPARSE_STR_USED(pTmp->longName)) {
+                printf("  %s, %s\n", pTmp->shortName, pTmp->longName);
+            } else if (ACA_ARGPARSE_STR_USED(pTmp->shortName)) {
+                printf("  %s\n", pTmp->shortName);
+            } else if (ACA_ARGPARSE_STR_USED(pTmp->longName)) {
+                printf("  %s\n", pTmp->longName);
             } else {
-                tmp = tmp->next;
+                pTmp = pTmp->next;
                 continue;
             }
 
-            if (ACA_ARGPARSE_STR_USED(tmp->description)) {
-                printf("        %s\n\n", tmp->description);
+            if (ACA_ARGPARSE_STR_USED(pTmp->description)) {
+                printf("        %s\n\n", pTmp->description);
             }
         }
-        tmp = tmp->next;
+        pTmp = pTmp->next;
     }
 }
 

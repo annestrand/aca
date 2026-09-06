@@ -4,4 +4,4 @@
 #define ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP
 
 #define ACA_LOG_IMPLEMENTATION
-#include "aca_log.h"
+#include "aca_log.h" // IWYU pragma: keep

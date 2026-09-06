@@ -1,7 +1,7 @@
-#include <string>
-
 #include "aca_log.h"
 #include "gtest/gtest.h"
+
+#include <string>
 
 #if 0 // set/enable for debugging aid when writing tests
 #define PRINT_LOG_STR(str) printf("%s", str.c_str())
@@ -49,7 +49,6 @@ TEST(log, null_handler) {
 
     // 5. large payload test
     std::string longInput(256, 'z');
-    std::string expectedOutput = "[ INFO] " + longInput + "\n";
     LOG_TEST_NULL(INFO, "%s", longInput.c_str());
 }
 

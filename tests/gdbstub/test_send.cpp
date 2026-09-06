@@ -1,14 +1,15 @@
+#include "aca_gdbstub.h"
+#include "test_common.hpp"
+
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
-#include <signal.h>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "test_common.hpp"
 #include <gtest/gtest.h>
-
-#include "aca_gdbstub.h"
+#include <signal.h>
 
 static void cmpCharArrays(char *arr1, char *arr2, size_t size) {
     for (size_t i = 0; i < size; ++i) {
@@ -34,7 +35,7 @@ TEST(gdbstub, basic_signals) {
 
     // Create test putchar buffer
     std::vector<char> testBuff;
-    g_putcharPktHandle = &testBuff;
+    pPutcharPktHandle = &testBuff;
 
     GTEST_COUT << "    Testing SIGINT...\n";
     aca_gdbstub_context gdbstubCtx = {0};

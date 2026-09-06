@@ -1,0 +1,72 @@
+Checks: >
+  -*,
+  bugprone-*,
+  modernize-*,
+  portability-*,
+  performance-*,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  readability-braces-around-statements,
+  readability-deleted-default,
+  readability-redundant-smartptr-get,
+  readability-simplify-boolean-expr,
+  readability-identifier-naming,
+
+  -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-avoid-do-while,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-use-enum-class,
+  -cppcoreguidelines-no-malloc,
+  -cppcoreguidelines-pro-type-cstyle-cast,
+  -cppcoreguidelines-pro-type-const-cast,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-variadic-functions,
+  -modernize-avoid-c-arrays,
+  -modernize-use-auto,
+  -modernize-deprecated-headers,
+  -modernize-use-using,
+  -modernize-avoid-c-style-cast,
+  -modernize-use-nullptr,
+  -modernize-use-bool-literals,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -portability-avoid-pragma-once,
+  -performance-enum-size,
+
+HeaderFilterRegex: '^tests/|^examples/|^[A-Za-z0-9_-]+\.(h|hpp)$'
+
+CheckOptions:
+  readability-identifier-naming.ClassCase: 'lower_case'
+  readability-identifier-naming.FunctionCase: 'camelBack'
+  readability-identifier-naming.ParameterCase: 'camelBack'
+  readability-identifier-naming.VariableCase: 'camelBack'
+  readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
+  readability-identifier-naming.PublicMemberCase: camelBack
+  readability-identifier-naming.PublicMethodCase: 'CamelCase'
+  readability-identifier-naming.ProtectedMemberPrefix: 'm'
+  readability-identifier-naming.ProtectedMemberCase: 'CamelCase'
+  readability-identifier-naming.PrivateMemberPrefix: 'm'
+  readability-identifier-naming.PrivateMemberCase: 'CamelCase'
+  readability-identifier-naming.PrivateMethodCase: 'camelBack'
+  readability-identifier-naming.PrivateMemberIgnoredRegexp: '^mp[A-Z_].*'
+  readability-identifier-naming.GlobalConstantPointerPrefix: 'p'
+  readability-identifier-naming.GlobalConstantPointerCase: 'CamelCase'
+  readability-identifier-naming.GlobalPointerPrefix: 'p'
+  readability-identifier-naming.GlobalPointerCase: 'CamelCase'
+  readability-identifier-naming.LocalConstantPointerPrefix: 'p'
+  readability-identifier-naming.LocalConstantPointerCase: 'CamelCase'
+  readability-identifier-naming.LocalPointerPrefix: 'p'
+  readability-identifier-naming.LocalPointerCase: 'CamelCase'

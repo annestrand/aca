@@ -84,8 +84,8 @@ void acaLogStandardFileHandler(aca_log_handler_args args);
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 #endif
 
 #if __STDC_VERSION__ >= 201112L
@@ -100,41 +100,41 @@ void acaLogStandardFileHandler(aca_log_handler_args args);
     do {                                                                                           \
         switch (level) {                                                                           \
             case ACA_LOG_TRACE:                                                                    \
-                levelStr = "TRACE";                                                                \
+                (levelStr) = "TRACE";                                                              \
                 break;                                                                             \
             case ACA_LOG_DEBUG:                                                                    \
-                levelStr = "DEBUG";                                                                \
+                (levelStr) = "DEBUG";                                                              \
                 break;                                                                             \
             case ACA_LOG_INFO:                                                                     \
-                levelStr = "INFO";                                                                 \
+                (levelStr) = "INFO";                                                               \
                 break;                                                                             \
             case ACA_LOG_WARN:                                                                     \
-                levelStr = "WARN";                                                                 \
+                (levelStr) = "WARN";                                                               \
                 break;                                                                             \
             case ACA_LOG_ERROR:                                                                    \
-                levelStr = "ERROR";                                                                \
+                (levelStr) = "ERROR";                                                              \
                 break;                                                                             \
             case ACA_LOG_FATAL:                                                                    \
-                levelStr = "FATAL";                                                                \
+                (levelStr) = "FATAL";                                                              \
                 break;                                                                             \
             default:                                                                               \
                 assert(false && "invalid log level!");                                             \
-                levelStr = "";                                                                     \
+                (levelStr) = "";                                                                   \
                 break;                                                                             \
         }                                                                                          \
     } while (0)
 
 // returns a singular "file+line" string
-static inline const char *FormatFileLine(const char *file, int line) {
+static inline const char *formatFileLine(const char *file, int line) {
     static THREAD_LOCAL char buffer[64 + 1] = {0};
 #if defined(ACA_LOG_CHOP_FILEPATH) // since some compilers treat __FILE__ as full path
-    const char *leaf = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
+    const char *pLeaf = strrchr(file, '/') ? strrchr(file, '/') + 1 : file;
 #if defined(_WIN32)
-    if (leaf == file) {
-        leaf = strrchr(file, '\\') ? strrchr(file, '\\') + 1 : file;
+    if (pLeaf == file) {
+        pLeaf = strrchr(file, '\\') ? strrchr(file, '\\') + 1 : file;
     }
 #endif // _WIN32
-    snprintf(buffer, sizeof(buffer) - 1, "%s:%d", leaf, line);
+    snprintf(buffer, sizeof(buffer) - 1, "%s:%d", pLeaf, line);
 #else
     snprintf(buffer, sizeof(buffer) - 1, "%s:%d", file, line);
 #endif // ACA_LOG_CHOP_FILEPATH
@@ -142,20 +142,20 @@ static inline const char *FormatFileLine(const char *file, int line) {
 }
 
 // returns a monotonic timestamp value
-static double GetTimestamp() {
+static double getTimestamp() {
     static int    initialized = 0;
-    static double start_time  = 0;
+    static double startTime   = 0;
 #ifdef _WIN32
     static LARGE_INTEGER frequency;
     LARGE_INTEGER        counter;
     if (!initialized) {
         QueryPerformanceFrequency(&frequency);
         QueryPerformanceCounter(&counter);
-        start_time  = (double)counter.QuadPart / (double)frequency.QuadPart;
+        startTime   = (double)counter.QuadPart / (double)frequency.QuadPart;
         initialized = 1;
     }
     QueryPerformanceCounter(&counter);
-    return ((double)counter.QuadPart / (double)frequency.QuadPart) - start_time;
+    return ((double)counter.QuadPart / (double)frequency.QuadPart) - startTime;
 #else
     struct timespec ts;
     if (!initialized) {
@@ -168,7 +168,7 @@ static double GetTimestamp() {
 #endif
 }
 
-THREAD_LOCAL aca_log_handler *tl_acaLogHandler = acaLogStandardHandler;
+THREAD_LOCAL aca_log_handler *pTlAcaLogHandler = acaLogStandardHandler;
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
 static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
                                              ACA_LOG_COLOR_MAGENTA,
@@ -180,28 +180,28 @@ static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
 
 // main log entrypoint
 void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    assert(tl_acaLogHandler != NULL && "no log handler set for acaLog!");
+    va_list pArgs = NULL;
+    va_start(pArgs, fmt);
+    assert(pTlAcaLogHandler != NULL && "no log handler set for acaLog!");
     aca_log_handler_args handlerArgs = {};
     handlerArgs.fmt                  = fmt;
     handlerArgs.file                 = file;
     handlerArgs.level                = level;
     handlerArgs.line                 = line;
-    handlerArgs.timestamp            = GetTimestamp();
-    va_copy(handlerArgs.args, args);
-    tl_acaLogHandler(handlerArgs);
-    va_end(args);
+    handlerArgs.timestamp            = getTimestamp();
+    va_copy(handlerArgs.args, pArgs);
+    pTlAcaLogHandler(handlerArgs);
+    va_end(pArgs);
 }
 
 // sets a new handler for the acaLog routine
 void acaLogSetHandler(aca_log_handler *handler) {
-    tl_acaLogHandler = handler;
+    pTlAcaLogHandler = handler;
 }
 
 // returns current log handler for acaLog routine
 aca_log_handler *acaLogGetHandler(void) {
-    return tl_acaLogHandler;
+    return pTlAcaLogHandler;
 }
 
 static inline void acaLogStandardHandlerImpl(FILE *fp, aca_log_handler_args args) {
@@ -212,20 +212,20 @@ static inline void acaLogStandardHandlerImpl(FILE *fp, aca_log_handler_args args
     fprintf(fp, "[%10.4f] ", args.timestamp);
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_TIMESTAMP
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL)
-    const char *levelStr;
-    ACA_LOG_SET_LEVEL(args.level, levelStr);
+    const char *pLevelStr = NULL;
+    ACA_LOG_SET_LEVEL(args.level, pLevelStr);
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
     if (fp == stdout) { // only allow color escape codes for terminal output
-        fprintf(fp, "[%s%5s%s] ", gAcaLogLevelColorMap[args.level], levelStr, ACA_LOG_COLOR_RESET);
+        fprintf(fp, "[%s%5s%s] ", gAcaLogLevelColorMap[args.level], pLevelStr, ACA_LOG_COLOR_RESET);
     } else {
-        fprintf(fp, "[%5s] ", levelStr);
+        fprintf(fp, "[%5s] ", pLevelStr);
     }
 #else
-    fprintf(fp, "[%5s] ", levelStr);
+    fprintf(fp, "[%5s] ", pLevelStr);
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE)
-    fprintf(fp, "[%28s] ", FormatFileLine(args.file, args.line));
+    fprintf(fp, "[%28s] ", formatFileLine(args.file, args.line));
 #endif // ACA_LOG_DISABLE_STANDARD_HANDLER_FILELINE
     vfprintf(fp, args.fmt, args.args);
     fprintf(fp, "\n");
@@ -238,9 +238,9 @@ void acaLogStandardHandler(aca_log_handler_args args) {
 
 // barebones logging - level fmt...
 void acaLogBasicHandler(aca_log_handler_args args) {
-    const char *levelStr;
-    ACA_LOG_SET_LEVEL(args.level, levelStr);
-    fprintf(stdout, "[%5s] ", levelStr);
+    const char *pLevelStr = NULL;
+    ACA_LOG_SET_LEVEL(args.level, pLevelStr);
+    fprintf(stdout, "[%5s] ", pLevelStr);
     vfprintf(stdout, args.fmt, args.args);
     fprintf(stdout, "\n");
 }
@@ -252,9 +252,9 @@ void acaLogNullHandler(aca_log_handler_args args) {
 
 // same as standard handler but routes to a file vs. stdout
 void acaLogStandardFileHandler(aca_log_handler_args args) {
-    FILE       *fp             = NULL;
-    const char *dumpFile       = "aca_log_dump.log";
-    const char *dumpFileAccess = "a";
+    FILE       *pFp             = NULL;
+    const char *pDumpFile       = "aca_log_dump.log";
+    const char *pDumpFileAccess = "a";
 
 #if defined(ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME)
     dumpFile = ACA_LOG_TO_STANDARD_FILE_HANDLER_FILENAME;
@@ -267,7 +267,7 @@ void acaLogStandardFileHandler(aca_log_handler_args args) {
     }
 #endif // ACA_LOG_TO_STANDARD_FILE_HANDLER_ACCESS_STR
 #ifdef _WIN32
-    if (fopen_s(&fp, dumpFile, dumpFileAccess) != 0) {
+    if (fopen_s(&pFp, pDumpFile, pDumpFileAccess) != 0) {
         assert(false && "failed to open log file!");
         return;
     }
@@ -279,8 +279,8 @@ void acaLogStandardFileHandler(aca_log_handler_args args) {
     }
 #endif
 
-    acaLogStandardHandlerImpl(fp, args);
-    fclose(fp);
+    acaLogStandardHandlerImpl(pFp, args);
+    fclose(pFp);
 }
 
 #endif // ACA_LOG_IMPLEMENTATION

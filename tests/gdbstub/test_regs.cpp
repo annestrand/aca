@@ -1,13 +1,13 @@
+#include "aca_gdbstub.h"
+#include "gtest/gtest.h"
+#include "test_common.hpp"
+
 #include <algorithm>
-#include <iostream>
-#include <signal.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
-
-#include "test_common.hpp"
-#include "gtest/gtest.h"
-
-#include "aca_gdbstub.h"
 
 TEST(gdbstub, test_g) {
     // Create dummy regfile
@@ -20,8 +20,8 @@ TEST(gdbstub, test_g) {
     gdbstubCtx.signalNum           = 5;
 
     std::vector<char> testVec;
-    g_putcharPktHandle = &testVec;
-    g_putcharPktHandle->clear();
+    pPutcharPktHandle = &testVec;
+    pPutcharPktHandle->clear();
     acaGdbstubSendRegs(&gdbstubCtx);
     GTEST_FAIL_IF_ERR(gdbstubCtx.err);
 
@@ -33,13 +33,13 @@ TEST(gdbstub, test_g) {
             itoaBuff[1] = itoaBuff[0];
             itoaBuff[0] = '0';
         }
-        EXPECT_EQ(itoaBuff[0], (*g_putcharPktHandle)[(i * 2) + 1]);
-        EXPECT_EQ(itoaBuff[1], (*g_putcharPktHandle)[(i * 2) + 2]);
+        EXPECT_EQ(itoaBuff[0], (*pPutcharPktHandle)[(i * 2) + 1]);
+        EXPECT_EQ(itoaBuff[1], (*pPutcharPktHandle)[(i * 2) + 2]);
     }
 }
 
 TEST(gdbstub, test_G) {
-    char charRegs[(2 * 8 * sizeof(int)) + 1] = {
+    char charRegs[(static_cast<size_t>(2) * 8 * sizeof(int)) + 1] = {
         '0', 'b', '0', '0', '0', '0', '0', '0', // regs[0] = 11
         '0', '4', '0', '0', '0', '0', '0', '0', // regs[1] = 4
         '0', '5', '0', '0', '0', '0', '0', '0', // regs[2] = 5
@@ -85,8 +85,8 @@ TEST(gdbstub, test_p) {
     GTEST_FAIL_IF_ERR(acaDynamicCharBufferInsert(&mockPkt.pktData, 0));
 
     std::vector<char> testVec;
-    g_putcharPktHandle = &testVec;
-    g_putcharPktHandle->clear();
+    pPutcharPktHandle = &testVec;
+    pPutcharPktHandle->clear();
 
     acaGdbstubSendReg(&gdbstubCtx, &mockPkt);
     GTEST_FAIL_IF_ERR(gdbstubCtx.err);
@@ -99,7 +99,7 @@ TEST(gdbstub, test_p) {
     int byte0    = actualResult & 0xff;
     int byte1    = (actualResult & 0xff00) >> 8;
     int byte2    = (actualResult & 0xff0000) >> 8 * 2;
-    int byte3    = (actualResult & 0xff000000) >> 8 * 3;
+    int byte3    = static_cast<int>((static_cast<unsigned>(actualResult) & 0xff000000U) >> 24);
     actualResult = (byte0 << 8 * 3) | (byte1 << 8 * 2) | (byte2 << 8 * 1) | byte3;
     EXPECT_EQ(regs[5], actualResult);
     acaDynamicCharBufferFree(&mockPkt.pktData);

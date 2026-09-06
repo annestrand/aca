@@ -1,8 +1,10 @@
 #include "aca_argparse.h"
 
+#include <cstddef>
+
 #include <gtest/gtest.h>
 
-static aca_argparse_opt_list g_clearOptlist = {ACA_ARGPARSE_HEAD_OPT, NULL};
+static aca_argparse_opt_list gClearOptlist = {ACA_ARGPARSE_HEAD_OPT, NULL};
 extern const char           *gAcaArgparseErrStrs[];
 
 TEST(argparse, duplicate_options) {
@@ -26,7 +28,7 @@ TEST(argparse, duplicate_options) {
     EXPECT_EQ(data.infoBits.duplicate, 1U);
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, value_option_at_end_no_value) {
@@ -47,7 +49,7 @@ TEST(argparse, value_option_at_end_no_value) {
                                        gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_OPT_VAL_END_ARGV]));
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, unknown_option) {
@@ -69,7 +71,7 @@ TEST(argparse, unknown_option) {
     EXPECT_TRUE(ACA_ARGPARSE_STR_MATCH(argv[unknownOpt], "--problem"));
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, option_value_is_other_option) {
@@ -95,7 +97,7 @@ TEST(argparse, option_value_is_other_option) {
         ACA_ARGPARSE_STR_MATCH(data.errValMsg, gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_VAL_IS_OPT]));
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, option_value_malformed_long_format) {
@@ -122,7 +124,7 @@ TEST(argparse, option_value_malformed_long_format) {
                                        gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_MALFORMED_OPT_VAL]));
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }
 
 TEST(argparse, longname_non_value_option_has_value) {
@@ -149,5 +151,5 @@ TEST(argparse, longname_non_value_option_has_value) {
                                        gAcaArgparseErrStrs[ACA_ARGPARSE_ERR_NON_VAL_OPT_VAL]));
 
     // Cleanup HEAD node
-    acaArgparseOptionListManager(&g_clearOptlist);
+    acaArgparseOptionListManager(&gClearOptlist);
 }

@@ -9,12 +9,7 @@ CompileFlags:
     -DACA_ARGPARSE_IMPLEMENTATION=1,
     -DACA_RING_DS_IMPLEMENTATION=1,
   ]
-Diagnostics:
-  ClangTidy:
-    Remove: [misc-definitions-in-headers]
 
----
-
-# global settings
 Diagnostics:
-  Suppress: [redefinition, builtin_definition]
+  UnusedIncludes: Strict
+  MissingIncludes: Strict

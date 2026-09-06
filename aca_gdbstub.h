@@ -27,8 +27,8 @@ typedef struct {
 } aca_gdb_packet;
 
 typedef struct {
-    unsigned int o_signalOnEntry : 1;
-    unsigned int o_enableLogging : 1;
+    unsigned int oSignalOnEntry : 1;
+    unsigned int oEnableLogging : 1;
 } aca_gdbstub_opts;
 
 typedef struct {
@@ -94,8 +94,8 @@ void acaDynamicCharBufferFree(aca_dynamic_char_buffer *buf);
 #define ACA_GDBSTUB_DEC_ENCODE_ASCII(in, len, out) snprintf(out, len, "%d", in)
 #define ACA_GDBSTUB_CHECK_RET(ret, gdbstubObj)                                                     \
     do {                                                                                           \
-        gdbstubObj->err = ret;                                                                     \
-        if (gdbstubObj->err != ACA_GDBSTUB_SUCCESS) {                                              \
+        (gdbstubObj)->err = ret;                                                                   \
+        if ((gdbstubObj)->err != ACA_GDBSTUB_SUCCESS) {                                            \
             return;                                                                                \
         }                                                                                          \
     } while (0)
@@ -114,11 +114,12 @@ int acaDynamicCharBufferInsert(aca_dynamic_char_buffer *buf, char item) {
     // Realloc if buffer is full - double the array size
     if (buf->used == buf->size) {
         buf->size *= 2;
-        buf->buffer = (char *)realloc(buf->buffer, buf->size);
-        if (buf->buffer == NULL) {
+        char *pTmp = (char *)realloc(buf->buffer, buf->size);
+        if (pTmp == NULL) {
             ACA_GDBSTUB_LOG("Failed to realloc memory!\n");
             return ACA_GDBSTUB_ALLOC_FAILED;
         }
+        buf->buffer = pTmp;
     }
     buf->buffer[buf->used++] = item;
     return ACA_GDBSTUB_SUCCESS;
@@ -145,7 +146,7 @@ void acaGdbstubComputeChecksum(char *buffer, size_t len, char *outBuf) {
 
 void acaGdbstubSend(const char *data, aca_gdbstub_context *gdbstubObj) {
     size_t len = strlen(data);
-    if (gdbstubObj->opts.o_enableLogging) {
+    if (gdbstubObj->opts.oEnableLogging) {
         ACA_GDBSTUB_LOG(ACA_GDBSTUB_SEND " : packet = %s\n", data);
     }
     for (size_t i = 0; i < len; ++i) {
@@ -155,7 +156,7 @@ void acaGdbstubSend(const char *data, aca_gdbstub_context *gdbstubObj) {
 
 void acaGdbstubRecv(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *gdbPkt) {
     int  currentOffset = 0;
-    char c;
+    char c             = 0;
     while (1) {
         // Get the beginning of the packet data '$'
         while (1) {
@@ -190,7 +191,7 @@ void acaGdbstubRecv(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *gdbPkt) {
         }
 
         gdbPkt->commandType = gdbPkt->pktData.buffer[0];
-        if (gdbstubObj->opts.o_enableLogging) {
+        if (gdbstubObj->opts.oEnableLogging) {
             ACA_GDBSTUB_LOG(
                 ACA_GDBSTUB_RECV " : packet = $%s#%s\n", gdbPkt->pktData.buffer, gdbPkt->checksum);
         }
@@ -201,7 +202,7 @@ void acaGdbstubRecv(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *gdbPkt) {
 
 void acaGdbstubWriteRegs(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt) {
     char tmpBuf[8];
-    int  decodedHex;
+    int  decodedHex = 0;
     for (size_t i = 0; i < recvPkt->pktData.size - 1; ++i) {
         tmpBuf[i % 2] = recvPkt->pktData.buffer[i];
         if ((i % 2) != 0) {
@@ -212,7 +213,7 @@ void acaGdbstubWriteRegs(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPk
 }
 
 void acaGdbstubWriteReg(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt) {
-    int    index, valOffset = 0;
+    int    index = 0, valOffset = 0;
     size_t regWidth = gdbstubObj->regsSize / gdbstubObj->regsCount;
     for (int i = 0; recvPkt->pktData.buffer[i] != 0; ++i) {
         if (recvPkt->pktData.buffer[i] == '=') {
@@ -271,7 +272,7 @@ void acaGdbstubSendRegs(aca_gdbstub_context *gdbstubObj) {
 }
 
 void acaGdbstubSendReg(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt) {
-    int    index;
+    int    index    = 0;
     size_t regWidth = gdbstubObj->regsSize / gdbstubObj->regsCount;
     ACA_GDBSTUB_HEX_DECODE_ASCII(&recvPkt->pktData.buffer[2], index);
 
@@ -287,7 +288,7 @@ void acaGdbstubSendReg(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt)
 }
 
 void acaGdbstubWriteMem(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt) {
-    size_t address, length;
+    size_t address = 0, length = 0;
     int    lengthOffset = 0;
     int    valOffset    = 0;
 
@@ -317,7 +318,7 @@ void acaGdbstubWriteMem(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt
 
     // Call user write memory handler
     for (size_t i = 0; i < length; ++i) {
-        int  decodedVal;
+        int  decodedVal = 0;
         char atoiBuf[8];
         atoiBuf[0] = recvPkt->pktData.buffer[valOffset + (i * 2)];
         atoiBuf[1] = recvPkt->pktData.buffer[valOffset + (i * 2) + 1];
@@ -330,7 +331,7 @@ void acaGdbstubWriteMem(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt
 }
 
 void acaGdbstubReadMem(aca_gdbstub_context *gdbstubObj, aca_gdb_packet *recvPkt) {
-    size_t address, length;
+    size_t address = 0, length = 0;
     int    valOffset = 0;
     for (int i = 0; recvPkt->pktData.buffer[i] != 0; ++i) {
         if ((recvPkt->pktData.buffer[i] == ',') || (recvPkt->pktData.buffer[i] == ';') ||
@@ -416,8 +417,8 @@ void acaGdbstubSendSignal(aca_gdbstub_context *gdbstubObj) {
 void acaGdbstubProcessBreakpoint(aca_gdbstub_context *gdbstubObj,
                                  aca_gdb_packet      *recvPkt,
                                  int                  type) {
-    int    offset = 0;
-    size_t address;
+    int    offset  = 0;
+    size_t address = 0;
     for (int i = 0; recvPkt->pktData.buffer[i] != 0; ++i) {
         if ((recvPkt->pktData.buffer[i] == ',') || (recvPkt->pktData.buffer[i] == ';') ||
             (recvPkt->pktData.buffer[i] == ':')) {
@@ -449,7 +450,7 @@ void acaGdbstubProcessBreakpoint(aca_gdbstub_context *gdbstubObj,
 
 // Main gdb stub process call
 void acaGdbstubProcess(aca_gdbstub_context *gdbstubObj) {
-    if (gdbstubObj->opts.o_signalOnEntry) {
+    if (gdbstubObj->opts.oSignalOnEntry) {
         acaGdbstubSendSignal(gdbstubObj);
     }
     // Poll and reply to packets from GDB until exit-related command

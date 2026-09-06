@@ -1,13 +1,10 @@
-#include <algorithm>
-#include <iostream>
-#include <signal.h>
+#include "aca_gdbstub.h"
+#include "gtest/gtest.h"
+#include "test_common.hpp"
+
+#include <cstdio>
 #include <string>
 #include <vector>
-
-#include "test_common.hpp"
-#include "gtest/gtest.h"
-
-#include "aca_gdbstub.h"
 
 TEST(gdbstub, test_m) {
     aca_gdb_packet      mockPkt    = {0};
@@ -20,11 +17,11 @@ TEST(gdbstub, test_m) {
     dummyMem[9]  = 'o';
     dummyMem[10] = 'o';
     dummyMem[11] = 'l';
-    g_memHandle  = &dummyMem;
+    pMemHandle   = &dummyMem;
 
     // Create mock putchar buff
     std::vector<char> dummyPutchar;
-    g_putcharPktHandle = &dummyPutchar;
+    pPutcharPktHandle = &dummyPutchar;
 
     // Read 4 bytes starting at address 0x8
     GTEST_FAIL_IF_ERR(acaDynamicCharBufferInsert(&mockPkt.pktData, 'm'));
@@ -44,8 +41,8 @@ TEST(gdbstub, test_m) {
             itoaBuff[1] = itoaBuff[0];
             itoaBuff[0] = '0';
         }
-        EXPECT_EQ(itoaBuff[0], (*g_putcharPktHandle)[(i * 2) + 1]);
-        EXPECT_EQ(itoaBuff[1], (*g_putcharPktHandle)[(i * 2) + 2]);
+        EXPECT_EQ(itoaBuff[0], (*pPutcharPktHandle)[(i * 2) + 1]);
+        EXPECT_EQ(itoaBuff[1], (*pPutcharPktHandle)[(i * 2) + 2]);
     }
     acaDynamicCharBufferFree(&mockPkt.pktData);
 }
@@ -57,11 +54,11 @@ TEST(gdbstub, test_M) {
 
     // Create mock memory
     std::vector<unsigned char> dummyMem(128);
-    g_memHandle = &dummyMem;
+    pMemHandle = &dummyMem;
 
     // Create mock putchar handle
     std::vector<char> putcharHandle;
-    g_putcharPktHandle = &putcharHandle;
+    pPutcharPktHandle = &putcharHandle;
 
     // Write '0xdeadbeef' starting at address 0x4
     GTEST_FAIL_IF_ERR(acaDynamicCharBufferInsert(&mockPkt.pktData, 'M'));

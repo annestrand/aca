@@ -31,10 +31,7 @@
 #include <unistd.h>
 #endif
 
-#define LOG_MSG_SIZE 512
-#define LOG_QUEUE_CAPACITY 512
-#define CONSUMER_SLEEP_MS 1
-#define PRODUCER_ITERS 2000
+enum { LOG_MSG_SIZE = 512, LOG_QUEUE_CAPACITY = 512, CONSUMER_SLEEP_MS = 1, PRODUCER_ITERS = 2000 };
 #define LOG_SHUTDOWN_MAGIC "__async_logger_shutdown__"
 
 typedef struct log_entry {
@@ -42,7 +39,7 @@ typedef struct log_entry {
 } log_entry;
 
 // SPSC ring queue shared between the producer (main thread) and the consumer thread
-static log_entry *gLogQueue = NULL;
+static log_entry *pGLogQueue = NULL;
 
 // each counter is written by a single thread and read only after join()
 static size_t gProduced = 0; // producer
@@ -51,7 +48,7 @@ static size_t gFlushed  = 0; // consumer
 
 // ------------------------------------------------------------------------------------------------
 
-static void ThreadSleepMs(int ms) {
+static void threadSleepMs(int ms) {
 #ifdef _WIN32
     Sleep((DWORD)ms);
 #else
@@ -60,25 +57,25 @@ static void ThreadSleepMs(int ms) {
 }
 
 #ifdef _WIN32
-static HANDLE       gConsumerThread = NULL;
-static DWORD WINAPI ConsumerThreadEntry(LPVOID arg);
+static HANDLE       pGConsumerThread = NULL;
+static DWORD WINAPI consumerThreadEntry(LPVOID arg);
 #else
 static pthread_t gConsumerThread;
 static void     *ConsumerThreadEntry(void *arg);
 #endif
 
-static void StartConsumerThread(void) {
+static void startConsumerThread() {
 #ifdef _WIN32
-    gConsumerThread = CreateThread(NULL, 0, ConsumerThreadEntry, NULL, 0, NULL);
+    pGConsumerThread = CreateThread(NULL, 0, consumerThreadEntry, NULL, 0, NULL);
 #else
     pthread_create(&gConsumerThread, NULL, ConsumerThreadEntry, NULL);
 #endif
 }
 
-static void JoinConsumerThread(void) {
+static void joinConsumerThread() {
 #ifdef _WIN32
-    WaitForSingleObject(gConsumerThread, INFINITE);
-    CloseHandle(gConsumerThread);
+    WaitForSingleObject(pGConsumerThread, INFINITE);
+    CloseHandle(pGConsumerThread);
 #else
     pthread_join(gConsumerThread, NULL);
 #endif
@@ -86,7 +83,7 @@ static void JoinConsumerThread(void) {
 
 // ------------------------------------------------------------------------------------------------
 
-static const char *LevelString(aca_log_level level) {
+static const char *levelString(aca_log_level level) {
     switch (level) {
         case ACA_LOG_TRACE:
             return "TRACE";
@@ -105,29 +102,29 @@ static const char *LevelString(aca_log_level level) {
     }
 }
 
-static const char *ChopFilePath(const char *file) {
-    const char *leaf = strrchr(file, '/');
-    if (leaf != NULL) {
-        return leaf + 1;
+static const char *chopFilePath(const char *file) {
+    const char *pLeaf = strrchr(file, '/');
+    if (pLeaf != NULL) {
+        return pLeaf + 1;
     }
-    leaf = strrchr(file, '\\');
-    return leaf != NULL ? leaf + 1 : file;
+    pLeaf = strrchr(file, '\\');
+    return pLeaf != NULL ? pLeaf + 1 : file;
 }
 
 // custom aca_log handler: format the record now (args.args is only valid here), then hand it off
 // to the lock-free queue so the logging call never blocks on I/O
-static void AsyncLoggerHandler(aca_log_handler_args args) {
+static void asyncLoggerHandler(aca_log_handler_args args) {
     log_entry entry;
     memset(&entry, 0, sizeof(entry));
 
     char fileLine[64];
-    snprintf(fileLine, sizeof(fileLine), "%s:%d", ChopFilePath(args.file), args.line);
+    snprintf(fileLine, sizeof(fileLine), "%s:%d", chopFilePath(args.file), args.line);
 
     int written = snprintf(entry.text,
                            sizeof(entry.text),
                            "[%10.4f] [%5s] [%24s] ",
                            args.timestamp,
-                           LevelString(args.level),
+                           levelString(args.level),
                            fileLine);
     if (written < 0) {
         written = 0;
@@ -138,32 +135,32 @@ static void AsyncLoggerHandler(aca_log_handler_args args) {
     entry.text[sizeof(entry.text) - 1] = '\0';
 
     ++gProduced;
-    if (acaRingQueueSpscEnqueue(gLogQueue, &entry) == 0) {
+    if (acaRingQueueSpscEnqueue(pGLogQueue, &entry) == 0) {
         ++gDropped; // REJECT behavior: queue full, message is dropped
     }
 }
 
 // consumer thread: sole owner of the queue head - drains and prints until the shutdown sentinel
 #ifdef _WIN32
-static DWORD WINAPI ConsumerThreadEntry(LPVOID arg) {
+static DWORD WINAPI consumerThreadEntry(LPVOID arg) {
 #else
 static void *ConsumerThreadEntry(void *arg) {
 #endif
     (void)arg;
     for (;;) {
-        if (acaRingQueueSpscEmpty(gLogQueue)) {
-            ThreadSleepMs(CONSUMER_SLEEP_MS);
+        if (acaRingQueueSpscEmpty(pGLogQueue)) {
+            threadSleepMs(CONSUMER_SLEEP_MS);
             continue;
         }
 
-        size_t     index = acaRingQueueSpscDequeue(gLogQueue);
-        log_entry *entry = &gLogQueue[index];
+        size_t     index  = acaRingQueueSpscDequeue(pGLogQueue);
+        log_entry *pEntry = &pGLogQueue[index];
         ++gFlushed;
 
-        if (strstr(entry->text, LOG_SHUTDOWN_MAGIC) != NULL) {
+        if (strstr(pEntry->text, LOG_SHUTDOWN_MAGIC) != NULL) {
             break;
         }
-        printf("%s\n", entry->text);
+        printf("%s\n", pEntry->text);
     }
 #ifdef _WIN32
     return 0;
@@ -172,22 +169,22 @@ static void *ConsumerThreadEntry(void *arg) {
 #endif
 }
 
-int main(void) {
-    log_entry              *queue = NULL;
+int main() {
+    log_entry              *pQueue = NULL;
     aca_ring_queue_config_t config;
     config.capacity      = LOG_QUEUE_CAPACITY;
     config.fullBehavior  = ACA_RING_QUEUE_REJECT;
     config.isHeapAlloced = 1;
 
-    acaRingQueueSpscCreate(queue, &config);
-    if (queue == NULL) {
+    acaRingQueueSpscCreate(pQueue, &config);
+    if (pQueue == NULL) {
         fprintf(stderr, "failed to create the async log queue\n");
         return 1;
     }
-    gLogQueue = queue;
+    pGLogQueue = pQueue;
 
-    acaLogSetHandler(AsyncLoggerHandler);
-    StartConsumerThread();
+    acaLogSetHandler(asyncLoggerHandler);
+    startConsumerThread();
 
     // producer: simulate work while logging asynchronously (no blocking I/O on this thread)
     for (int i = 0; i < PRODUCER_ITERS; ++i) {
@@ -199,21 +196,21 @@ int main(void) {
         ACA_LOG_TRACE("tick %d", i);
 
         if (i % 250 == 0) {
-            ThreadSleepMs(1);
+            threadSleepMs(1);
         }
     }
 
-    log_entry shutdown_entry;
-    memset(&shutdown_entry, 0, sizeof(shutdown_entry));
-    snprintf(shutdown_entry.text, sizeof(shutdown_entry.text), "%s", LOG_SHUTDOWN_MAGIC);
-    while (acaRingQueueSpscEnqueue(gLogQueue, &shutdown_entry) == 0) {
+    log_entry shutdownEntry;
+    memset(&shutdownEntry, 0, sizeof(shutdownEntry));
+    snprintf(shutdownEntry.text, sizeof(shutdownEntry.text), "%s", LOG_SHUTDOWN_MAGIC);
+    while (acaRingQueueSpscEnqueue(pGLogQueue, &shutdownEntry) == 0) {
         // spin/sleep until space is available in the queue for the shutdown message
-        ThreadSleepMs(1);
+        threadSleepMs(1);
     }
-    JoinConsumerThread();
+    joinConsumerThread();
 
     printf("---\nproduced: %zu, flushed: %zu, dropped: %zu\n", gProduced, gFlushed, gDropped);
 
-    acaRingQueueSpscFree(queue);
+    acaRingQueueSpscFree(pQueue);
     return 0;
 }
