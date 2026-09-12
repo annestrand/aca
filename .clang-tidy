@@ -32,6 +32,7 @@ Checks: >
   -cppcoreguidelines-no-malloc,
   -cppcoreguidelines-pro-type-cstyle-cast,
   -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-macro-to-enum,
   -modernize-use-trailing-return-type,
   -modernize-avoid-variadic-functions,
   -modernize-avoid-c-arrays,

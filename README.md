@@ -34,8 +34,13 @@ User then creates the following source code file and adds it to their project `a
 #include "aca_argparse.h"
 ```
 
-## Building tests
-[GoogleTest](https://github.com/google/googletest) is used as the unit testing framework.
+## Building tests and examples
+
+### Prerequisites ✅
+- [GoogleTest](https://github.com/google/googletest) is used as the unit testing framework.
+- CMake 4.0 (or higher)
+
+### Build 🔨
 
 Fetch third_party submodule(s):
 ```bash
@@ -47,7 +52,6 @@ Build tests:
 cmake -Bbuild && cmake --build build
 ```
 
-## Building examples
 Examples are built by default. Disable them with the `BUILD_EXAMPLES` CMake option:
 ```bash
 cmake -Bbuild -DBUILD_EXAMPLES=OFF && cmake --build build

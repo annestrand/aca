@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 4.0)
 
 project(aca)
 set(CMAKE_CXX_STANDARD 11)
+
+find_package(Git REQUIRED)
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 option(BUILD_EXAMPLES "Build the aca examples" ON)
 
@@ -44,32 +47,24 @@ if (BUILD_EXAMPLES)
 endif()
 
 # clang-tidy & clang-format integration
-get_target_property(ACA_TEST_SOURCES aca_tests SOURCES)
-get_target_property(ACA_ASYNC_LOGGER_SOURCES aca_async_logger SOURCES)
-find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
-if (CLANG_TIDY_EXE)
-    if (ENABLE_LINT OR BUILD_TYPE_LOWER MATCHES "release")
-        message(STATUS "Clang-Tidy: Enabled")
-        set_target_properties(aca_tests PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-    endif()
+find_program(RUN_CLANG_TIDY_BIN NAMES run-clang-tidy run-clang-tidy.py)
+if (RUN_CLANG_TIDY_BIN)
+    message(STATUS "Found run-clang-tidy: ${RUN_CLANG_TIDY_BIN}")
+    set(THIRD_PARTY_REGEX "^^(?!.*third_party)")
     add_custom_target(tidy
-        COMMAND ${CLANG_TIDY_EXE} 
-            "-p=${CMAKE_BINARY_DIR}" 
-            ${ACA_TEST_SOURCES} 
-            ${ACA_ASYNC_LOGGER_SOURCES} 
-            -fix -quiet
+        COMMAND ${Python_EXECUTABLE} "${RUN_CLANG_TIDY_BIN}"
+            "-p=${CMAKE_BINARY_DIR}"
+            -fix -quiet -format
+            "${THIRD_PARTY_REGEX}"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Running clang-tidy (with fix) on aca sources..."
     )
 endif()
 find_program(CLANG_FORMAT_EXE NAMES "clang-format")
 if (CLANG_FORMAT_EXE)
-    message(STATUS "Clang-Format: Enabled")
+    message(STATUS "Found clang-format: ${CLANG_FORMAT_EXE}")
     add_custom_target(format
-        COMMAND ${CLANG_FORMAT_EXE} 
-            -i 
-            ${ACA_TEST_SOURCES}
-            ${ACA_ASYNC_LOGGER_SOURCES}
+        COMMAND ${GIT_EXECUTABLE} clang-format || ${CMAKE_COMMAND} -E true
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Running clang-format on aca sources..."
     )
