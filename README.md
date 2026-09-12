@@ -247,13 +247,14 @@ A printf-style logging library.
 
 - Utilizes a "handler" registration mechanism (i.e. function pointers)
 - Allows user to hot-swap handlers at runtime
+- Users can forward their own opaque `userdata` to the handler
 - Library comes with example handlers (e.g. null, basic, standard)
 
 ### Design/API
-
 ```c
 void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
 void             acaLogSetHandler(aca_log_handler *handler);
+void             acaLogSetHandlerUserdata(void *userdata);
 aca_log_handler *acaLogGetHandler(void);
 ```
 
@@ -280,6 +281,8 @@ void acaLogStandardFileHandler(aca_log_handler_args args); // [tag] [timestamp] 
 void acaLogBasicHandler(aca_log_handler_args args);        // [level] fmtStr (to stdout)
 void acaLogNullHandler(aca_log_handler_args args);         // disables/eats the logs
 ```
+The userdata set via a prior `acaLogSetHandlerUserdata(void *userdata)` invocation can be accessed inside of handler routines 
+via casting the `userdata` field in `aca_log_handler_args` struct
 
 ### Configs
 
