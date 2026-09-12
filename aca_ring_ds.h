@@ -282,7 +282,7 @@ static inline aca_ring_queue_ds_header_t *reallocRingQueue(void *queue, size_t n
 }
 
 void *acaRingBufferCreateImpl(void *buffer, size_t elemSize, size_t capacity) {
-    aca_ring_buffer_ds_header_t *pHeader = nullptr;
+    aca_ring_buffer_ds_header_t *pHeader = NULL;
     if (buffer == NULL) {
         pHeader =
             (aca_ring_buffer_ds_header_t *)malloc(ACA_RING_BUFFER_RESERVE(elemSize, capacity));
@@ -348,7 +348,7 @@ void *acaRingQueueCreateImpl(void *queue, size_t elemSize, const aca_ring_queue_
     if (config == NULL || config->capacity == 0 || elemSize == 0) {
         return NULL;
     }
-    aca_ring_queue_ds_header_t *pHeader = nullptr;
+    aca_ring_queue_ds_header_t *pHeader = NULL;
     if (queue == NULL) {
         pHeader = (aca_ring_queue_ds_header_t *)malloc(
             ACA_RING_QUEUE_RESERVE(elemSize, config->capacity));
@@ -521,7 +521,7 @@ void *acaRingBufferCreateSpscImpl(void *buffer, size_t elemSize, size_t capacity
     if (elemSize == 0 || capacity == 0) {
         return NULL;
     }
-    aca_ring_buffer_spsc_ds_header_t *pHeader = nullptr;
+    aca_ring_buffer_spsc_ds_header_t *pHeader = NULL;
     if (buffer == NULL) {
         pHeader = (aca_ring_buffer_spsc_ds_header_t *)malloc(
             ACA_RING_BUFFER_SPSC_RESERVE(elemSize, capacity));
@@ -578,7 +578,7 @@ acaRingQueueCreateSpscImpl(void *queue, size_t elemSize, const aca_ring_queue_co
     if (config == NULL || elemSize == 0 || config->capacity == 0) {
         return NULL;
     }
-    aca_ring_queue_spsc_ds_header_t *pHeader = nullptr;
+    aca_ring_queue_spsc_ds_header_t *pHeader = NULL;
     if (queue == NULL) {
         pHeader = (aca_ring_queue_spsc_ds_header_t *)malloc(
             ACA_RING_QUEUE_SPSC_RESERVE(elemSize, config->capacity));
