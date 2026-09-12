@@ -29,6 +29,7 @@ typedef struct aca_log_handler_args {
     aca_log_level level;
     int           line;
     double        timestamp;
+    void         *userdata;
 } aca_log_handler_args;
 
 typedef void(aca_log_handler)(aca_log_handler_args args);
@@ -39,6 +40,7 @@ extern "C" {
 
 void             acaLog(aca_log_level level, const char *file, int line, const char *fmt, ...);
 void             acaLogSetHandler(aca_log_handler *handler);
+void             acaLogSetHandlerUserdata(void *userdata);
 aca_log_handler *acaLogGetHandler(void);
 
 // provided log handlers
@@ -168,7 +170,9 @@ static double getTimestamp() {
 #endif
 }
 
-THREAD_LOCAL aca_log_handler *pTlAcaLogHandler = acaLogStandardHandler;
+THREAD_LOCAL aca_log_handler *pTlAcaLogHandler         = acaLogStandardHandler;
+THREAD_LOCAL void            *pTlAcaLogHandlerUserdata = NULL;
+
 #if !defined(ACA_LOG_DISABLE_STANDARD_HANDLER_LEVEL_COLORS)
 static const char *gAcaLogLevelColorMap[] = {ACA_LOG_COLOR_WHITE,
                                              ACA_LOG_COLOR_MAGENTA,
@@ -189,6 +193,7 @@ void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ..
     handlerArgs.level                = level;
     handlerArgs.line                 = line;
     handlerArgs.timestamp            = getTimestamp();
+    handlerArgs.userdata             = pTlAcaLogHandlerUserdata;
     va_copy(handlerArgs.args, pArgs);
     pTlAcaLogHandler(handlerArgs);
     va_end(pArgs);
@@ -197,6 +202,10 @@ void acaLog(aca_log_level level, const char *file, int line, const char *fmt, ..
 // sets a new handler for the acaLog routine
 void acaLogSetHandler(aca_log_handler *handler) {
     pTlAcaLogHandler = handler;
+}
+
+void acaLogSetHandlerUserdata(void *userdata) {
+    pTlAcaLogHandlerUserdata = userdata;
 }
 
 // returns current log handler for acaLog routine
